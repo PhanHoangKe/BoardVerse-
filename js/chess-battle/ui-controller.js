@@ -204,6 +204,12 @@ export class UIController {
     this.currentAnalysis = null;
     this.prevEvalCp = 0;
 
+    // Board Zoom & Custom Setup Editor State
+    this.boardScale = parseFloat(localStorage.getItem('boardverse_board_scale') || '1.0');
+    this.isEditorMode = false;
+    this.selectedPalettePiece = 'K';
+    this.editorTurn = 'w';
+
     // Piece Icons
     this.pieceIcons = {
       w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
@@ -700,7 +706,196 @@ export class UIController {
         this.explainPvDetails();
       });
     }
+
+    // Initialize Board Zoom Controls & Board Editor
+    this.initZoomControls();
+    this.initBoardEditor();
   }
+
+  initZoomControls() {
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
+
+    this.applyZoom(this.boardScale);
+
+    if (btnZoomIn) {
+      btnZoomIn.addEventListener('click', () => {
+        this.boardScale = Math.min(1.4, parseFloat((this.boardScale + 0.1).toFixed(1)));
+        this.applyZoom(this.boardScale);
+      });
+    }
+
+    if (btnZoomOut) {
+      btnZoomOut.addEventListener('click', () => {
+        this.boardScale = Math.max(0.7, parseFloat((this.boardScale - 0.1).toFixed(1)));
+        this.applyZoom(this.boardScale);
+      });
+    }
+
+    if (btnZoomReset) {
+      btnZoomReset.addEventListener('click', () => {
+        this.boardScale = 1.0;
+        this.applyZoom(this.boardScale);
+      });
+    }
+  }
+
+  applyZoom(scale) {
+    document.documentElement.style.setProperty('--board-scale', scale);
+    const txtScale = document.getElementById('txtBoardScale');
+    if (txtScale) txtScale.textContent = `${Math.round(scale * 100)}%`;
+    localStorage.setItem('boardverse_board_scale', scale);
+  }
+
+  initBoardEditor() {
+    const btnToggleEditor = document.getElementById('btnToggleBoardEditor');
+    const editorDock = document.getElementById('boardEditorDock');
+    const btnClear = document.getElementById('btnEditorClearBoard');
+    const btnResetInitial = document.getElementById('btnEditorResetInitial');
+    const btnPasteFen = document.getElementById('btnEditorPasteFen');
+    const btnDoneAnalyze = document.getElementById('btnEditorDoneAnalyze');
+    const btnTurnW = document.getElementById('btnEditorTurnWhite');
+    const btnTurnB = document.getElementById('btnEditorTurnBlack');
+
+    if (btnToggleEditor && editorDock) {
+      btnToggleEditor.addEventListener('click', () => {
+        this.isEditorMode = !this.isEditorMode;
+        if (this.isEditorMode) {
+          btnToggleEditor.classList.add('active');
+          editorDock.style.display = 'flex';
+          this.analysisManager.cancelCurrentAnalysis();
+          this.setStatusMessage('<i class="fa-solid fa-puzzle-piece" style="color:var(--cb-gold);"></i> CHẾ ĐỘ XẾP BÀN CỜ: Chọn quân từ khay rồi click vào ô để đặt/xóa quân.');
+        } else {
+          btnToggleEditor.classList.remove('active');
+          editorDock.style.display = 'none';
+        }
+        this.renderBoard();
+      });
+    }
+
+    // Piece Palette Selection
+    document.querySelectorAll('#chessPalette .palette-piece-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#chessPalette .palette-piece-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        this.selectedPalettePiece = btn.dataset.piece;
+      });
+    });
+
+    // Default selection
+    const defaultPiece = document.querySelector('#chessPalette .palette-piece-btn[data-piece="K"]');
+    if (defaultPiece) defaultPiece.classList.add('selected');
+
+    // Turn selection
+    if (btnTurnW && btnTurnB) {
+      btnTurnW.addEventListener('click', () => {
+        this.editorTurn = 'w';
+        btnTurnW.classList.add('active');
+        btnTurnB.classList.remove('active');
+      });
+      btnTurnB.addEventListener('click', () => {
+        this.editorTurn = 'b';
+        btnTurnB.classList.add('active');
+        btnTurnW.classList.remove('active');
+      });
+    }
+
+    if (btnClear) {
+      btnClear.addEventListener('click', () => {
+        if (this.isXiangqiActive && this.isXiangqiActive()) return;
+        this.game.load('8/8/8/8/8/8/8/8 w - - 0 1');
+        this.selectedSquare = null;
+        this.lastMove = null;
+        this.renderBoard();
+      });
+    }
+
+    if (btnResetInitial) {
+      btnResetInitial.addEventListener('click', () => {
+        if (this.isXiangqiActive && this.isXiangqiActive()) return;
+        this.game.reset();
+        this.selectedSquare = null;
+        this.lastMove = null;
+        this.renderBoard();
+      });
+    }
+
+    if (btnPasteFen) {
+      btnPasteFen.addEventListener('click', () => {
+        if (this.isXiangqiActive && this.isXiangqiActive()) return;
+        const fen = prompt('Nhập chuỗi FEN thế cờ bạn muốn xếp:', this.game.fen());
+        if (fen) {
+          if (this.game.load(fen.trim())) {
+            this.selectedSquare = null;
+            this.lastMove = null;
+            this.renderBoard();
+            this.setStatusMessage('<i class="fa-solid fa-check" style="color:var(--cb-accent);"></i> Đã nạp thế cờ từ FEN thành công!');
+          } else {
+            alert('Chuỗi FEN không hợp lệ!');
+          }
+        }
+      });
+    }
+
+    if (btnDoneAnalyze) {
+      btnDoneAnalyze.addEventListener('click', () => {
+        if (this.isXiangqiActive && this.isXiangqiActive()) return;
+        // Validate position: must have at least 1 White King and 1 Black King
+        const b = this.game.board();
+        let whiteKings = 0, blackKings = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let f = 0; f < 8; f++) {
+            const p = b[r][f];
+            if (p && p.type === 'k') {
+              if (p.color === 'w') whiteKings++;
+              if (p.color === 'b') blackKings++;
+            }
+          }
+        }
+
+        if (whiteKings !== 1 || blackKings !== 1) {
+          alert(`Thế cờ phải có đúng 1 Vua Trắng (hiện có: ${whiteKings}) và 1 Vua Đen (hiện có: ${blackKings})!`);
+          return;
+        }
+
+        // Set turn if needed
+        let currentFen = this.game.fen();
+        const fenParts = currentFen.split(' ');
+        fenParts[1] = this.editorTurn || 'w';
+        fenParts[2] = 'KQkq';
+        fenParts[3] = '-';
+        const finalFen = fenParts.join(' ');
+
+        if (!this.game.load(finalFen)) {
+          fenParts[2] = '-';
+          this.game.load(fenParts.join(' '));
+        }
+
+        // Exit editor mode
+        this.isEditorMode = false;
+        if (btnToggleEditor) btnToggleEditor.classList.remove('active');
+        if (editorDock) editorDock.style.display = 'none';
+
+        if (!this.chessState.botColor) {
+          this.chessState.botColor = this.editorTurn || 'w';
+        }
+
+        this.selectedSquare = null;
+        this.lastMove = null;
+        this.renderBoard();
+        this.updateUI();
+        this.setStatusMessage('<i class="fa-solid fa-brain" style="color:var(--cb-gold);"></i> Đã lưu thế cờ! Bot AI đang phân tích nước đi tốt nhất...');
+        this.triggerAnalysis();
+      });
+    }
+  }
+
+  isXiangqiActive() {
+    const xiangqiWrapper = document.getElementById('xiangqiBoardWrapper');
+    return xiangqiWrapper && xiangqiWrapper.style.display !== 'none';
+  }
+
 
   generateChess960Fen() {
     const pieces = new Array(8);
@@ -1823,6 +2018,23 @@ export class UIController {
 
   handleSquareClick(square) {
     if (!this.active) return;
+
+    // Custom Board Editor placement handling
+    if (this.isEditorMode) {
+      if (this.selectedPalettePiece === 'trash') {
+        this.game.remove(square);
+      } else if (this.selectedPalettePiece) {
+        const isUpper = this.selectedPalettePiece === this.selectedPalettePiece.toUpperCase();
+        const color = isUpper ? 'w' : 'b';
+        const type = this.selectedPalettePiece.toLowerCase();
+        this.game.put({ type, color }, square);
+      }
+      this.selectedSquare = null;
+      this.lastMove = null;
+      this.renderBoard();
+      return;
+    }
+
     if (!this.chessState.botColor) {
       this.setStatusMessage('CHUYÊN GIA BÀN CỜ: HÃY CHỌN BÊN CHO BOT ĐỂ BẮT ĐẦU!');
       this.showError('<i class="fa-solid fa-triangle-exclamation"></i> Vui lòng chọn [ BOT CẦM TRẮNG ] hoặc [ BOT CẦM ĐEN ] trước!');

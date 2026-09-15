@@ -45,10 +45,16 @@
       this.active = false;
       this.appMode = 'ASSISTANT';
 
+      // Custom Board Editor State
+      this.isEditorMode = false;
+      this.selectedXqPalettePiece = 'K';
+      this.editorTurn = 'r';
+
       this.initDomElements();
       this.initBoardRenderer();
       this.bindEvents();
       this.initEngineSystem();
+      this.initXiangqiEditor();
     }
 
     pause() {
@@ -389,6 +395,128 @@
       }
     }
 
+    initXiangqiEditor() {
+      const btnToggleEditor = document.getElementById('btnToggleBoardEditor');
+      const editorDock = document.getElementById('boardEditorDock');
+      const btnClear = document.getElementById('btnEditorClearBoard');
+      const btnResetInitial = document.getElementById('btnEditorResetInitial');
+      const btnPasteFen = document.getElementById('btnEditorPasteFen');
+      const btnDoneAnalyze = document.getElementById('btnEditorDoneAnalyze');
+      const btnTurnW = document.getElementById('btnEditorTurnWhite');
+      const btnTurnB = document.getElementById('btnEditorTurnBlack');
+
+      document.querySelectorAll('#xiangqiPalette .palette-piece-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#xiangqiPalette .palette-piece-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          this.selectedXqPalettePiece = btn.dataset.xqPiece;
+        });
+      });
+
+      const defaultXqPiece = document.querySelector('#xiangqiPalette .palette-piece-btn[data-xq-piece="K"]');
+      if (defaultXqPiece) defaultXqPiece.classList.add('selected');
+
+      if (btnToggleEditor) {
+        btnToggleEditor.addEventListener('click', () => {
+          if (!this.active) return;
+          this.isEditorMode = btnToggleEditor.classList.contains('active');
+          if (this.isEditorMode) {
+            this.analysisManager.cancelAnalysis();
+            const statusBadge = document.getElementById('evalStatusText');
+            if (statusBadge) {
+              statusBadge.innerHTML = '<i class="fa-solid fa-puzzle-piece" style="color:var(--cb-gold);"></i> XẾP CỜ TƯỚNG: Click vào giao điểm để đặt/xóa quân.';
+            }
+          }
+        });
+      }
+
+      if (btnTurnW && btnTurnB) {
+        btnTurnW.addEventListener('click', () => {
+          if (this.active) this.editorTurn = 'r';
+        });
+        btnTurnB.addEventListener('click', () => {
+          if (this.active) this.editorTurn = 'b';
+        });
+      }
+
+      if (btnClear) {
+        btnClear.addEventListener('click', () => {
+          if (!this.active) return;
+          this.gameState.board = Array(10).fill(null).map(() => Array(9).fill(null));
+          this.clearSelection();
+          this.renderer.render(this.gameState);
+        });
+      }
+
+      if (btnResetInitial) {
+        btnResetInitial.addEventListener('click', () => {
+          if (!this.active) return;
+          this.gameState.loadInitial();
+          this.clearSelection();
+          this.renderer.render(this.gameState);
+        });
+      }
+
+      if (btnPasteFen) {
+        btnPasteFen.addEventListener('click', () => {
+          if (!this.active) return;
+          const fen = prompt('Nhập chuỗi FEN Cờ Tướng bạn muốn xếp:', this.gameState.getFen ? this.gameState.getFen() : '');
+          if (fen) {
+            if (this.gameState.loadFen(fen.trim())) {
+              this.clearSelection();
+              this.renderer.render(this.gameState);
+              const statusBadge = document.getElementById('evalStatusText');
+              if (statusBadge) {
+                statusBadge.innerHTML = '<i class="fa-solid fa-check" style="color:var(--cb-accent);"></i> Đã nạp thế cờ tướng thành công!';
+              }
+            } else {
+              alert('Chuỗi FEN cờ tướng không hợp lệ!');
+            }
+          }
+        });
+      }
+
+      if (btnDoneAnalyze) {
+        btnDoneAnalyze.addEventListener('click', () => {
+          if (!this.active) return;
+          let redKings = 0, blackKings = 0;
+          for (let r = 0; r < 10; r++) {
+            for (let c = 0; c < 9; c++) {
+              const p = this.gameState.board[r][c];
+              if (p) {
+                if (p.type === 'k' && p.color === 'r') redKings++;
+                if (p.type === 'k' && p.color === 'b') blackKings++;
+              }
+            }
+          }
+
+          if (redKings !== 1 || blackKings !== 1) {
+            alert(`Thế cờ Tướng phải có đúng 1 Tướng Đỏ (hiện có: ${redKings}) và 1 Tướng Đen (hiện có: ${blackKings})!`);
+            return;
+          }
+
+          this.gameState.sideToMove = (this.editorTurn === 'b') ? 'b' : 'r';
+          if (!this.gameState.botColor) {
+            this.gameState.botColor = this.gameState.sideToMove;
+          }
+
+          this.isEditorMode = false;
+          if (btnToggleEditor) btnToggleEditor.classList.remove('active');
+          if (editorDock) editorDock.style.display = 'none';
+
+          this.clearSelection();
+          this.renderer.render(this.gameState);
+          this.updateUiState();
+          const statusBadge = document.getElementById('evalStatusText');
+          if (statusBadge) {
+            statusBadge.innerHTML = '<i class="fa-solid fa-brain" style="color:var(--cb-gold);"></i> Đã lưu thế cờ! Đang phân tích nước đi tốt nhất...';
+          }
+          this.triggerAnalysis();
+        });
+      }
+    }
+
+
     setAppMode(mode) {
       if (!this.active) return;
       this.appMode = mode;
@@ -550,6 +678,22 @@
 
     handleIntersectionClick(pos) {
       if (!this.active) return;
+
+      // Xiangqi Board Editor piece placement
+      if (this.isEditorMode) {
+        if (this.selectedXqPalettePiece === 'trash') {
+          this.gameState.board[pos.row][pos.col] = null;
+        } else if (this.selectedXqPalettePiece) {
+          const isRed = this.selectedXqPalettePiece === this.selectedXqPalettePiece.toUpperCase();
+          const color = isRed ? 'r' : 'b';
+          const type = this.selectedXqPalettePiece.toLowerCase();
+          this.gameState.board[pos.row][pos.col] = { type, color };
+        }
+        this.clearSelection();
+        this.renderer.render(this.gameState);
+        return;
+      }
+
       if (this.gameState.status === 'SELECT_SIDE' || !this.gameState.botColor) {
         alert('Vui lòng chọn phe cho BOT để bắt đầu trận đấu!');
         return;

@@ -191,6 +191,22 @@
 
         <!-- CENTER PANEL: Chess Board & Evaluation Bar -->
         <section class="cb-card cb-card-center" style="align-items:center;">
+            
+            <!-- Board Zoom & Tool Controls -->
+            <div class="board-top-toolbar">
+                <div class="board-zoom-group">
+                    <button type="button" id="btnZoomOut" class="btn-board-tool" title="Thu nhỏ bàn cờ"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ hiện tại">100%</span>
+                    <button type="button" id="btnZoomIn" class="btn-board-tool" title="Phóng to bàn cờ"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button type="button" id="btnZoomReset" class="btn-board-tool" title="Đặt lại kích thước chuẩn"><i class="fa-solid fa-arrow-rotate-right"></i></button>
+                </div>
+                <div class="board-actions-group">
+                    <button type="button" id="btnToggleBoardEditor" class="btn-board-tool btn-board-tool--primary" title="Tự xếp quân theo ý muốn">
+                        <i class="fa-solid fa-puzzle-piece"></i> <span>XẾP BÀN CỜ</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="board-wrapper-container">
 
                 <!-- Dynamic Evaluation Bar -->
@@ -248,6 +264,79 @@
                     </svg>
                 </div>
             </div>
+
+            <!-- Custom Board Editor Dock -->
+            <div id="boardEditorDock" class="board-editor-dock" style="display: none;">
+                <div class="editor-dock-header">
+                    <div class="editor-dock-title">
+                        <i class="fa-solid fa-shapes" style="color:var(--cb-gold);"></i> <span>KHAY XẾP QUÂN CỜ</span>
+                    </div>
+                    <div class="editor-turn-picker">
+                        <span style="font-size:0.75rem; font-weight:700; color:var(--cb-text-muted);">LƯỢT ĐI:</span>
+                        <button type="button" id="btnEditorTurnWhite" class="btn-editor-turn active">
+                            <span id="lblEditorTurnWhite">TRẮNG ĐI</span>
+                        </button>
+                        <button type="button" id="btnEditorTurnBlack" class="btn-editor-turn">
+                            <span id="lblEditorTurnBlack">ĐEN ĐI</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chess Piece Palette -->
+                <div id="chessPalette" class="editor-palette-row">
+                    <div class="palette-piece-group">
+                        <button type="button" class="palette-piece-btn" data-piece="K" title="Vua Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wK.svg" alt="wK"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="Q" title="Hậu Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wQ.svg" alt="wQ"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="R" title="Xe Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wR.svg" alt="wR"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="B" title="Tượng Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wB.svg" alt="wB"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="N" title="Mã Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wN.svg" alt="wN"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="P" title="Tốt Trắng"><img src="https://lichess1.org/assets/piece/cburnett/wP.svg" alt="wP"></button>
+                    </div>
+                    <div class="palette-piece-group">
+                        <button type="button" class="palette-piece-btn" data-piece="k" title="Vua Đen"><img src="https://lichess1.org/assets/piece/cburnett/bK.svg" alt="bK"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="q" title="Hậu Đen"><img src="https://lichess1.org/assets/piece/cburnett/bQ.svg" alt="bQ"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="r" title="Xe Đen"><img src="https://lichess1.org/assets/piece/cburnett/bR.svg" alt="bR"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="b" title="Tượng Đen"><img src="https://lichess1.org/assets/piece/cburnett/bB.svg" alt="bB"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="n" title="Mã Đen"><img src="https://lichess1.org/assets/piece/cburnett/bN.svg" alt="bN"></button>
+                        <button type="button" class="palette-piece-btn" data-piece="p" title="Tốt Đen"><img src="https://lichess1.org/assets/piece/cburnett/bP.svg" alt="bP"></button>
+                    </div>
+                    <button type="button" id="btnEditorTrash" class="palette-piece-btn palette-tool-btn" data-piece="trash" title="Xóa quân khi click vào ô"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+
+                <!-- Xiangqi Piece Palette -->
+                <div id="xiangqiPalette" class="editor-palette-row" style="display:none;">
+                    <div class="palette-piece-group">
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="K" title="Tướng Đỏ">帥</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="A" title="Sĩ Đỏ">仕</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="B" title="Tượng Đỏ">相</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="R" title="Xe Đỏ">俥</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="C" title="Pháo Đỏ">炮</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="N" title="Mã Đỏ">傌</button>
+                        <button type="button" class="palette-piece-btn xq-piece-r" data-xq-piece="P" title="Tốt Đỏ">兵</button>
+                    </div>
+                    <div class="palette-piece-group">
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="k" title="Tướng Đen">將</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="a" title="Sĩ Đen">士</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="b" title="Tượng Đen">象</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="r" title="Xe Đen">車</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="c" title="Pháo Đen">砲</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="n" title="Mã Đen">馬</button>
+                        <button type="button" class="palette-piece-btn xq-piece-b" data-xq-piece="p" title="Tốt Đen">卒</button>
+                    </div>
+                    <button type="button" id="btnEditorTrashXq" class="palette-piece-btn palette-tool-btn" data-xq-piece="trash" title="Xóa quân khi click vào ô"><i class="fa-solid fa-trash-can"></i></button>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="editor-dock-actions">
+                    <button type="button" id="btnEditorClearBoard" class="btn-editor-action"><i class="fa-solid fa-broom"></i> Dọn Bàn Cờ</button>
+                    <button type="button" id="btnEditorResetInitial" class="btn-editor-action"><i class="fa-solid fa-rotate-left"></i> Ban Đầu</button>
+                    <button type="button" id="btnEditorPasteFen" class="btn-editor-action"><i class="fa-solid fa-paste"></i> Nhập FEN</button>
+                    <button type="button" id="btnEditorDoneAnalyze" class="btn-editor-action btn-editor-action--primary">
+                        <i class="fa-solid fa-brain"></i> XONG &amp; NHỜ BOT PHÂN TÍCH
+                    </button>
+                </div>
+            </div>
+
 
             <!-- Board Action Bar: Điều hướng | Reset | Phân tích | Báo cáo -->
             <div class="cb-action-bar">
@@ -918,6 +1007,16 @@
                     }
                 }
 
+                // Switch Editor Palettes & Turn Labels
+                const chessPal = document.getElementById('chessPalette');
+                const xqPal = document.getElementById('xiangqiPalette');
+                const lblTurnW = document.getElementById('lblEditorTurnWhite');
+                const lblTurnB = document.getElementById('lblEditorTurnBlack');
+                if (chessPal) chessPal.style.display = 'none';
+                if (xqPal) xqPal.style.display = 'flex';
+                if (lblTurnW) lblTurnW.textContent = 'ĐỎ ĐI';
+                if (lblTurnB) lblTurnB.textContent = 'ĐEN ĐI';
+
                 if (window.chessApp) window.chessApp.pause();
                 if (!window.xiangqiApp && window.UIControllerModule && window.UIControllerModule.XiangqiUIController) {
                     window.xiangqiApp = new window.UIControllerModule.XiangqiUIController();
@@ -933,6 +1032,17 @@
 
                 xiangqiWrapper.style.display = 'none';
                 chessWrapper.style.display = 'block';
+
+                // Switch Editor Palettes & Turn Labels
+                const chessPal = document.getElementById('chessPalette');
+                const xqPal = document.getElementById('xiangqiPalette');
+                const lblTurnW = document.getElementById('lblEditorTurnWhite');
+                const lblTurnB = document.getElementById('lblEditorTurnBlack');
+                if (chessPal) chessPal.style.display = 'flex';
+                if (xqPal) xqPal.style.display = 'none';
+                if (lblTurnW) lblTurnW.textContent = 'TRẮNG ĐI';
+                if (lblTurnB) lblTurnB.textContent = 'ĐEN ĐI';
+
 
                 if (brandIcon) brandIcon.className = 'fa-solid fa-chess-knight';
                 if (brandText) brandText.textContent = 'CHESS BATTLE';
