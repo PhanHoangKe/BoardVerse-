@@ -131,10 +131,17 @@
             <!-- MỤC ĐÍCH SỬ DỤNG (CHẾ ĐỘ) -->
             <div>
                 <label class="cb-field-label"><i class="fa-solid fa-gamepad" style="color:var(--cb-purple);"></i> CHẾ ĐỘ CHƠI:</label>
-                <select id="selectAppMode" class="cb-select cb-select--full" style="margin-bottom: 12px;">
+                <select id="selectAppMode" class="cb-select cb-select--full" style="margin-bottom: 10px;">
                     <option value="ASSISTANT" selected>TRỢ LÝ (Bot ở dưới - Nhập cờ đối thủ)</option>
                     <option value="PLAY_VS_BOT">LUYỆN TẬP (Bạn ở dưới - Chơi với Bot)</option>
                 </select>
+
+                <!-- Nút Tự Xếp Bàn Cờ Kín Đáo Bên Chế Độ Luyện Tập -->
+                <div id="practiceEditorSection" style="margin-bottom: 10px; display: none;">
+                    <button type="button" id="btnToggleBoardEditor" class="btn-cb-action" style="width:100%; border-radius:var(--cb-radius); font-size:0.78rem; font-weight:800; padding:7px 10px; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(240, 178, 50, 0.1); border:1px solid rgba(240, 178, 50, 0.35); color:var(--cb-gold);">
+                        <i class="fa-solid fa-puzzle-piece"></i> <span>TỰ XẾP THẾ CỜ LUYỆN TẬP</span>
+                    </button>
+                </div>
 
                 <label id="lblSideChoice" class="cb-field-label">
                     <i class="fa-solid fa-robot" style="color:var(--cb-gold);"></i> CHỌN BÊN CHO BOT:
@@ -192,18 +199,13 @@
         <!-- CENTER PANEL: Chess Board & Evaluation Bar -->
         <section class="cb-card cb-card-center" style="align-items:center;">
             
-            <!-- Board Zoom & Tool Controls -->
+            <!-- Board Zoom & Tool Controls (Minimalist & Centered) -->
             <div class="board-top-toolbar">
                 <div class="board-zoom-group">
                     <button type="button" id="btnZoomOut" class="btn-board-tool" title="Thu nhỏ bàn cờ"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                     <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ hiện tại">100%</span>
                     <button type="button" id="btnZoomIn" class="btn-board-tool" title="Phóng to bàn cờ"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                     <button type="button" id="btnZoomReset" class="btn-board-tool" title="Đặt lại kích thước chuẩn"><i class="fa-solid fa-arrow-rotate-right"></i></button>
-                </div>
-                <div class="board-actions-group">
-                    <button type="button" id="btnToggleBoardEditor" class="btn-board-tool btn-board-tool--primary" title="Tự xếp quân theo ý muốn">
-                        <i class="fa-solid fa-puzzle-piece"></i> <span>XẾP BÀN CỜ</span>
-                    </button>
                 </div>
             </div>
 
@@ -541,6 +543,17 @@
                             <input type="text" id="inputFenString" placeholder="rnbqkbnr/pppppppp/..." class="cb-input" style="font-size:0.78rem; padding:6px 8px;">
                             <button type="button" id="btnLoadFen" class="btn-cb-action btn-cb-action--primary" style="padding:6px 10px;">
                                 Nạp
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-puzzle-piece" style="color:var(--cb-gold);"></i> Tự xếp bàn cờ
+                            <small>Mở khay xếp quân &amp; nhờ Bot phân tích</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <button type="button" id="btnSettingsOpenEditor" class="btn-cb-action" style="padding:6px 12px; border-radius:var(--cb-radius);">
+                                <i class="fa-solid fa-shapes" style="color:var(--cb-gold);"></i> Mở Khay
                             </button>
                         </div>
                     </div>

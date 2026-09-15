@@ -774,6 +774,17 @@ export class UIController {
       });
     }
 
+    const btnSettingsOpenEditor = document.getElementById('btnSettingsOpenEditor');
+    if (btnSettingsOpenEditor && btnToggleEditor) {
+      btnSettingsOpenEditor.addEventListener('click', () => {
+        const modal = document.getElementById('settingsModal');
+        if (modal) modal.style.display = 'none';
+        if (!this.isEditorMode) {
+          btnToggleEditor.click();
+        }
+      });
+    }
+
     // Piece Palette Selection
     document.querySelectorAll('#chessPalette .palette-piece-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1208,11 +1219,13 @@ export class UIController {
 
     const aiExplanationSection = document.getElementById('aiExplanationSection');
     const gamePhaseContainer = document.getElementById('gamePhaseContainer');
+    const practiceEditorSection = document.getElementById('practiceEditorSection');
 
     if (mode === 'PLAY_VS_BOT') {
       if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-user"></i> CHỌN BÊN CỦA BẠN (BẠN Ở PHÍA DƯỚI BÀN CỜ):';
       if (lblW) lblW.textContent = 'BẠN CẦM TRẮNG';
       if (lblB) lblB.textContent = 'BẠN CẦM ĐEN';
+      if (practiceEditorSection) practiceEditorSection.style.display = 'block';
       if (chkAutoApply) {
         chkAutoApply.checked = true; // Auto apply must be ON when playing vs bot
         this.autoApplyBestMove = true;
@@ -1228,6 +1241,7 @@ export class UIController {
       if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-robot"></i> CHỌN BÊN CHO BOT (BOT Ở PHÍA DƯỚI BÀN CỜ):';
       if (lblW) lblW.textContent = 'BOT CẦM TRẮNG';
       if (lblB) lblB.textContent = 'BOT CẦM ĐEN';
+      if (practiceEditorSection) practiceEditorSection.style.display = 'none';
       if (lblOpponentSuggestions) {
         lblOpponentSuggestions.innerHTML = 'Gợi ý nước đi khi đến lượt đối thủ';
       }

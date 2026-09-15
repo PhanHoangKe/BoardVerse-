@@ -525,11 +525,13 @@
       const lblB = document.getElementById('lblBtnBotBlack');
       const chkAutoApply = document.getElementById('chkAutoApplyMove');
       const lblOpponentSuggestions = document.getElementById('lblOpponentSuggestions');
+      const practiceSec = document.getElementById('practiceEditorSection');
 
       if (mode === 'PLAY_VS_BOT') {
         if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-user"></i> CHỌN BÊN CỦA BẠN (BẠN Ở PHÍA DƯỚI BÀN CỜ):';
         if (lblW) lblW.textContent = 'BẠN CẦM ĐỎ';
         if (lblB) lblB.textContent = 'BẠN CẦM ĐEN';
+        if (practiceSec) practiceSec.style.display = 'block';
         if (chkAutoApply) {
           chkAutoApply.checked = true;
           this.autoEngineMove = true;
@@ -549,6 +551,7 @@
         if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-robot"></i> CHỌN BÊN CHO BOT (BOT Ở PHÍA DƯỚI BÀN CỜ):';
         if (lblW) lblW.textContent = 'BOT CẦM ĐỎ';
         if (lblB) lblB.textContent = 'BOT CẦM ĐEN';
+        if (practiceSec) practiceSec.style.display = 'none';
         if (lblOpponentSuggestions) {
           lblOpponentSuggestions.innerHTML = 'Gợi ý nước đi khi đến lượt đối thủ';
         }
