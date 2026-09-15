@@ -199,16 +199,6 @@
         <!-- CENTER PANEL: Chess Board & Evaluation Bar -->
         <section class="cb-card cb-card-center" style="align-items:center;">
             
-            <!-- Board Zoom & Tool Controls (Minimalist & Centered) -->
-            <div class="board-top-toolbar">
-                <div class="board-zoom-group">
-                    <button type="button" id="btnZoomOut" class="btn-board-tool" title="Thu nhỏ bàn cờ"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                    <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ hiện tại">100%</span>
-                    <button type="button" id="btnZoomIn" class="btn-board-tool" title="Phóng to bàn cờ"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                    <button type="button" id="btnZoomReset" class="btn-board-tool" title="Đặt lại kích thước chuẩn"><i class="fa-solid fa-arrow-rotate-right"></i></button>
-                </div>
-            </div>
-
             <div class="board-wrapper-container">
 
                 <!-- Dynamic Evaluation Bar -->
@@ -340,7 +330,7 @@
             </div>
 
 
-            <!-- Board Action Bar: Điều hướng | Reset | Phân tích | Báo cáo -->
+            <!-- Board Action Bar: Điều hướng | Thu phóng | Reset | Phân tích | Báo cáo -->
             <div class="cb-action-bar">
                 <button type="button" id="btnRewindStart" class="btn-cb-action" title="Về vị trí bắt đầu">
                     <i class="fa-solid fa-backward-fast"></i>
@@ -353,6 +343,17 @@
                 </button>
                 <button type="button" id="btnFlipBoard" class="btn-cb-action" title="Xoay bàn cờ">
                     <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+                <span class="cb-action-sep"></span>
+                <button type="button" id="btnZoomOut" class="btn-cb-action" title="Thu nhỏ bàn cờ (-10%)">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                </button>
+                <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ bàn cờ">100%</span>
+                <button type="button" id="btnZoomIn" class="btn-cb-action" title="Phóng to bàn cờ (+10%)">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                </button>
+                <button type="button" id="btnZoomReset" class="btn-cb-action" title="Đặt lại kích thước chuẩn 100%">
+                    <i class="fa-solid fa-arrow-rotate-right"></i>
                 </button>
                 <span class="cb-action-sep"></span>
                 <button type="button" id="btnResetBoard" class="btn-cb-action btn-cb-action--danger" title="Đặt lại bàn cờ mới">
