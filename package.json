@@ -1,0 +1,17 @@
+{
+  "name": "chess-ai-platform",
+  "version": "2.0.0",
+  "description": "Chess AI Platform - Chess Battle Assistant & Xiangqi AI",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "stockfish": "^18.0.8"
+  }
+}

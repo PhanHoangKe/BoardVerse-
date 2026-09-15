@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=index.html?game=xiangqi">
+  <title>Trợ Lý Cờ Tướng AI — Xiangqi Battle Assistant</title>
+  <script>window.location.replace('index.html?game=xiangqi');</script>
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ========================================================
+       XIANGQI AI - MODERN UI v2
+       Bo góc 2px, nền đen đậm, icon FA có màu
+       ======================================================== */
+    :root {
+      --xq-bg: #0a0a0b;
+      --xq-bg-gradient: linear-gradient(135deg, #0a0a0b 0%, #141416 50%, #0a0a0b 100%);
+      --xq-card: #161618;
+      --xq-card-hover: #1c1c1f;
+      --xq-border: #2a2a2e;
+      --xq-border-hover: #3a3a40;
+      --xq-inset: #0e0e10;
+
+      --xq-gold: #f0b94a;
+      --xq-red: #ef5350;
+      --xq-black-piece: #37474f;
+      --xq-steel: #7aa2d9;
+      --xq-accent: #7cc44f;
+      --xq-purple: #ab74e2;
+
+      --xq-text: #e8e8ea;
+      --xq-muted: #8a8a93;
+      --xq-dim: #5a5a62;
+
+      --xq-radius: 2px;
+      --xq-radius-pill: 999px;
+
+      --xq-shadow-xs: 0 1px 2px rgba(0,0,0,0.4);
+      --xq-shadow-sm: 0 2px 6px rgba(0,0,0,0.5);
+      --xq-shadow-md: 0 4px 12px rgba(0,0,0,0.6);
+      --xq-shadow-lg: 0 8px 24px rgba(0,0,0,0.7);
+      --xq-shadow-xl: 0 16px 48px rgba(0,0,0,0.85);
+
+      --xq-transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--xq-bg-gradient);
+      background-attachment: fixed;
+      color: var(--xq-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(240, 185, 74, 0.05), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(239, 83, 80, 0.05), transparent),
+        radial-gradient(ellipse 60% 40% at 0% 80%, rgba(124, 196, 79, 0.05), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header, main, #engine-alert-banner, #side-selection-prompt {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* =================== HEADER =================== */
+    header {
+      width: 100%;
+      background: rgba(22, 22, 24, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--xq-border);
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 16px;
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--xq-gold);
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .header-logo i { color: var(--xq-red); font-size: 20px; }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--xq-muted);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+      transition: var(--xq-transition);
+      padding: 6px 10px;
+      border-radius: var(--xq-radius);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-link i { font-size: 11px; }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--xq-gold);
+      background: rgba(240, 185, 74, 0.08);
+      border-color: var(--xq-border-hover);
+    }
+
+    .btn-settings {
+      padding: 6px 10px;
+      border-radius: var(--xq-radius);
+      border: 1px solid var(--xq-border);
+      background: var(--xq-card);
+      color: var(--xq-muted);
+      cursor: pointer;
+      transition: var(--xq-transition);
+      font-size: 13px;
+    }
+    .btn-settings:hover {
+      color: var(--xq-purple);
+      border-color: var(--xq-purple);
+      background: rgba(171, 116, 226, 0.08);
+    }
+    .btn-settings:hover i { animation: spin-slow 0.6s ease; }
+    @keyframes spin-slow { from { transform: rotate(0);} to { transform: rotate(180deg);} }
+
+    /* =================== ALERT BANNERS =================== */
+    #engine-alert-banner {
+      display: none;
+      width: 100%;
+      max-width: 600px;
+      background: rgba(239, 83, 80, 0.1);
+      border: 1px solid rgba(239, 83, 80, 0.4);
+      color: #f3cdcc;
+      padding: 8px 14px;
+      border-radius: var(--xq-radius);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    #side-selection-prompt {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 12px;
+      background: rgba(240, 185, 74, 0.08);
+      border: 1px solid rgba(240, 185, 74, 0.3);
+      padding: 8px 12px;
+      border-radius: var(--xq-radius);
+      text-align: center;
+      color: var(--xq-gold);
+      font-weight: 700;
+      font-size: 12px;
+    }
+    #side-selection-prompt i { color: var(--xq-gold); margin-right: 4px; }
+
+    /* =================== MAIN =================== */
+    .main-container {
+      width: 100%;
+      max-width: 1280px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+    }
+
+    @media (max-width: 960px) {
+      .main-container { grid-template-columns: 1fr; }
+    }
+
+    /* Game Area */
+    .game-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .board-header-bar {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--xq-card);
+      padding: 10px 14px;
+      border-radius: var(--xq-radius);
+      border: 1px solid var(--xq-border);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .board-header-bar #turn-indicator {
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .board-header-bar #turn-indicator i { color: var(--xq-gold); }
+
+    .status-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: var(--xq-radius);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-badge i { font-size: 9px; }
+    .status-badge.active {
+      background: rgba(124, 196, 79, 0.12);
+      color: var(--xq-accent);
+      border: 1px solid rgba(124, 196, 79, 0.4);
+    }
+    .status-badge.active i { color: var(--xq-accent); }
+    .status-badge.warning {
+      background: rgba(240, 185, 74, 0.12);
+      color: var(--xq-gold);
+      border: 1px solid rgba(240, 185, 74, 0.4);
+    }
+    .status-badge.warning i { color: var(--xq-gold); }
+    .status-badge.danger {
+      background: rgba(239, 83, 80, 0.12);
+      color: var(--xq-red);
+      border: 1px solid rgba(239, 83, 80, 0.4);
+    }
+    .status-badge.danger i { color: var(--xq-red); }
+    .status-badge.neutral {
+      background: rgba(240, 185, 74, 0.1);
+      color: var(--xq-gold);
+      border: 1px solid rgba(240, 185, 74, 0.3);
+    }
+    .status-badge.neutral i { color: var(--xq-gold); }
+
+    .bot-perspective-indicator {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--xq-gold);
+      background: rgba(240, 185, 74, 0.08);
+      padding: 3px 8px;
+      border-radius: var(--xq-radius);
+      border: 1px solid rgba(240, 185, 74, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .bot-perspective-indicator i { color: var(--xq-gold); font-size: 11px; }
+
+    .header-right-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* =================== XIANGQI BOARD =================== */
+    #xiangqi-board-app {
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 9 / 10;
+      position: relative;
+      user-select: none;
+    }
+
+    .xiangqi-board-wrapper {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      border-radius: var(--xq-radius);
+      overflow: hidden;
+      box-shadow: var(--xq-shadow-lg), 0 0 0 1px rgba(240, 185, 74, 0.08);
+      background: #c69b57;
+    }
+
+    .xiangqi-board-svg { width: 100%; height: 100%; display: block; }
+    .xiangqi-pieces-layer { position: absolute; inset: 0; }
+
+    .xiangqi-intersection {
+      position: absolute;
+      width: 11.111%;
+      height: 10%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .xiangqi-piece {
+      width: clamp(34px, 84%, 54px);
+      height: clamp(34px, 84%, 54px);
+      border-radius: var(--xq-radius-pill);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+      cursor: pointer;
+      z-index: 5;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .xiangqi-piece.red, .xiangqi-piece.piece-r {
+      background: radial-gradient(circle at 35% 35%, #ff6558 0%, #e53935 55%, #a8221d 100%);
+      color: #ffffff;
+      border: 2px solid #ffab9e;
+      box-shadow:
+        0 3px 8px rgba(0,0,0,0.55),
+        inset 0 1px 3px rgba(255,255,255,0.35),
+        0 0 10px rgba(239, 83, 80, 0.35);
+    }
+
+    .xiangqi-piece.black, .xiangqi-piece.piece-b {
+      background: radial-gradient(circle at 35% 35%, #455a64 0%, #37474f 55%, #1e282d 100%);
+      color: var(--xq-gold);
+      border: 2px solid #ffe082;
+      box-shadow:
+        0 3px 8px rgba(0,0,0,0.55),
+        inset 0 1px 3px rgba(255,255,255,0.2),
+        0 0 10px rgba(240, 185, 74, 0.3);
+    }
+
+    .piece-inner-ring {
+      width: 84%;
+      height: 84%;
+      border-radius: var(--xq-radius-pill);
+      border: 1.5px dashed rgba(255,255,255,0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .piece-char {
+      font-size: clamp(15px, 4.3vw, 22px);
+      font-weight: 800;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .xiangqi-piece:hover { transform: scale(1.08); z-index: 20; }
+
+    .xiangqi-piece.selected {
+      box-shadow: 0 0 0 3px var(--xq-gold), 0 0 16px rgba(240, 185, 74, 0.85);
+      transform: scale(1.1);
+      z-index: 25;
+    }
+
+    .legal-move-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: var(--xq-radius-pill);
+      background: rgba(124, 196, 79, 0.9);
+      border: 2px solid #fff;
+      box-shadow: 0 0 8px rgba(124, 196, 79, 1);
+      pointer-events: none;
+      z-index: 30;
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+    .legal-move-dot.capture-hint {
+      width: 34px;
+      height: 34px;
+      background: transparent;
+      border: 3px solid var(--xq-red);
+      box-shadow: 0 0 12px rgba(239, 83, 80, 0.9);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.12); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .king-in-check {
+      box-shadow: inset 0 0 18px var(--xq-red), 0 0 18px var(--xq-red) !important;
+      border-radius: var(--xq-radius-pill);
+    }
+
+    /* Drag & Drop */
+    .xiangqi-piece.dragging { opacity: 0.4; transform: scale(1.06); }
+
+    .xiangqi-intersection.drag-over {
+      box-shadow: inset 0 0 14px var(--xq-gold), 0 0 16px var(--xq-gold) !important;
+      border-radius: var(--xq-radius-pill);
+      background: rgba(240, 185, 74, 0.22);
+    }
+
+    .xiangqi-piece-touch-clone {
+      position: fixed !important;
+      width: clamp(34px, 84%, 54px) !important;
+      height: clamp(34px, 84%, 54px) !important;
+      border-radius: var(--xq-radius-pill) !important;
+      pointer-events: none !important;
+      z-index: 9999 !important;
+      box-shadow: 0 8px 22px rgba(0,0,0,0.8), 0 0 18px rgba(240, 185, 74, 0.9);
+      opacity: 0.95;
+      transform: scale(1.12) translate(-50%, -50%);
+    }
+
+    .last-move-highlight {
+      position: absolute;
+      width: 10%;
+      height: 9%;
+      transform: translate(-50%, -50%);
+      border: 2px dashed var(--xq-gold);
+      border-radius: var(--xq-radius-pill);
+      pointer-events: none;
+      box-shadow: 0 0 8px rgba(240, 185, 74, 0.45);
+    }
+
+    /* =================== CONTROLS BAR =================== */
+    .board-controls-bar {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 10px;
+      background: var(--xq-inset);
+      border: 1px solid var(--xq-border);
+      border-radius: var(--xq-radius);
+    }
+
+    .btn-action {
+      background: var(--xq-card);
+      border: 1px solid var(--xq-border);
+      color: var(--xq-muted);
+      padding: 8px 12px;
+      border-radius: var(--xq-radius);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--xq-transition);
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-action i { font-size: 12px; color: var(--xq-steel); }
+    .btn-action:hover {
+      background: var(--xq-inset);
+      border-color: var(--xq-gold);
+      color: var(--xq-gold);
+      transform: translateY(-1px);
+      box-shadow: var(--xq-shadow-xs);
+    }
+    .btn-action:hover i { color: var(--xq-gold); }
+
+    /* =================== SIDE PANELS =================== */
+    .panels-area {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-card {
+      background: var(--xq-card);
+      border: 1px solid var(--xq-border);
+      border-radius: var(--xq-radius);
+      padding: 14px;
+      box-shadow: var(--xq-shadow-sm);
+      transition: var(--xq-transition);
+    }
+    .panel-card:hover { border-color: var(--xq-border-hover); }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--xq-gold);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--xq-border);
+      padding-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+    .panel-title i {
+      color: var(--xq-red);
+      font-size: 13px;
+      width: 14px;
+      text-align: center;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      gap: 10px;
+    }
+    .control-row:last-child { margin-bottom: 0; }
+
+    .control-label {
+      color: var(--xq-muted);
+      font-weight: 600;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .control-label i {
+      color: var(--xq-steel);
+      font-size: 10px;
+      width: 12px;
+      text-align: center;
+    }
+
+    select, input[type="text"], input[type="checkbox"] {
+      font-family: 'Inter', sans-serif;
+    }
+
+    select, input[type="text"] {
+      background: var(--xq-inset);
+      border: 1px solid var(--xq-border);
+      color: var(--xq-text);
+      padding: 6px 10px;
+      border-radius: var(--xq-radius);
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      transition: var(--xq-transition);
+    }
+    select { cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23f0b94a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 26px;
+    }
+    select:hover, select:focus, input[type="text"]:focus {
+      border-color: var(--xq-gold);
+    }
+    input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: var(--xq-accent);
+      border-radius: var(--xq-radius);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* Side choice buttons */
+    .btn-side-toggle {
+      padding: 10px 8px;
+      border-radius: var(--xq-radius);
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1.5px solid var(--xq-border);
+      background: var(--xq-card);
+      color: var(--xq-muted);
+      transition: var(--xq-transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+    }
+    .btn-side-toggle i { font-size: 14px; }
+
+    .btn-side-toggle.red.active, .btn-side-toggle.red:hover {
+      background: linear-gradient(135deg, #e53935 0%, #a8221d 100%);
+      color: #fff;
+      border-color: var(--xq-red);
+      box-shadow: 0 0 10px rgba(239, 83, 80, 0.45);
+    }
+    .btn-side-toggle.red.active i, .btn-side-toggle.red:hover i { color: #fff; }
+
+    .btn-side-toggle.black.active, .btn-side-toggle.black:hover {
+      background: linear-gradient(135deg, #37474f 0%, #1e282d 100%);
+      color: var(--xq-gold);
+      border-color: var(--xq-black-piece);
+      box-shadow: 0 0 10px rgba(55, 71, 79, 0.6);
+    }
+
+    .engine-truth-row {
+      background: rgba(239, 83, 80, 0.08);
+      padding: 6px 10px;
+      border-radius: var(--xq-radius);
+      border: 1px solid rgba(239, 83, 80, 0.3);
+      margin-top: 4px;
+    }
+    .engine-truth-row .control-label { color: var(--xq-red); font-weight: 800; }
+    .engine-truth-row .control-label i { color: var(--xq-red); }
+
+    /* Eval box */
+    .eval-box {
+      background: var(--xq-inset);
+      border-radius: var(--xq-radius);
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border-left: 3px solid var(--xq-gold);
+    }
+    .eval-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .eval-score {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--xq-gold);
+      font-variant-numeric: tabular-nums;
+    }
+    .eval-move {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--xq-accent);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .eval-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: var(--xq-muted);
+    }
+    .eval-meta strong { color: var(--xq-text); font-weight: 700; }
+
+    .ai-explanation {
+      font-size: 11px;
+      line-height: 1.55;
+      color: #c5c1b7;
+      background: var(--xq-inset);
+      padding: 8px 10px;
+      border-radius: var(--xq-radius);
+      border: 1px solid var(--xq-border);
+    }
+
+    .multipv-title {
+      margin-top: 10px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--xq-gold);
+      letter-spacing: 0.4px;
+    }
+
+    .multipv-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .multipv-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--xq-inset);
+      padding: 5px 8px;
+      border-radius: var(--xq-radius);
+      font-size: 11px;
+      border: 1px solid transparent;
+      transition: var(--xq-transition);
+      cursor: pointer;
+    }
+    .multipv-item:hover {
+      border-color: var(--xq-gold);
+      background: rgba(240, 185, 74, 0.04);
+    }
+    .pv-rank { color: var(--xq-gold); font-weight: 800; font-size: 10px; min-width: 16px; text-align: center; }
+    .pv-move { color: var(--xq-accent); font-weight: 800; flex: 1; margin-left: 5px; font-family: 'JetBrains Mono', monospace; }
+    .pv-eval { color: var(--xq-steel); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    .move-history-container {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .move-item {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      padding: 4px 6px;
+      border-radius: var(--xq-radius);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .move-item.active {
+      background: rgba(240, 185, 74, 0.1);
+      border-left: 3px solid var(--xq-gold);
+    }
+    .move-item .move-num { color: var(--xq-muted); font-weight: 700; min-width: 20px; }
+    .move-item .move-red { color: var(--xq-red); font-weight: 700; flex: 1; }
+    .move-item .move-black { color: var(--xq-text); font-weight: 700; flex: 1; }
+
+    /* =================== SETTINGS MODAL =================== */
+    .xq-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      animation: fade-in 0.2s ease;
+    }
+    .xq-modal.active { display: flex; }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slide-up { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+
+    .xq-modal__panel {
+      background: var(--xq-card);
+      border: 1px solid var(--xq-border);
+      border-top: 3px solid var(--xq-purple);
+      border-radius: var(--xq-radius);
+      padding: 18px;
+      width: 90%;
+      max-width: 560px;
+      max-height: 88vh;
+      color: var(--xq-text);
+      box-shadow: var(--xq-shadow-xl);
+      display: flex;
+      flex-direction: column;
+      animation: slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .xq-modal__head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--xq-border);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+    .xq-modal__title {
+      font-size: 15px;
+      color: var(--xq-purple);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .xq-modal__close {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--xq-muted);
+      font-size: 26px;
+      cursor: pointer;
+      line-height: 1;
+      transition: var(--xq-transition);
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--xq-radius);
+    }
+    .xq-modal__close:hover {
+      color: var(--xq-red);
+      border-color: var(--xq-red);
+      background: rgba(239, 83, 80, 0.08);
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 10px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .settings-group {
+      background: var(--xq-inset);
+      border: 1px solid var(--xq-border);
+      border-radius: var(--xq-radius);
+      padding: 12px;
+      transition: var(--xq-transition);
+    }
+    .settings-group:hover { border-color: var(--xq-border-hover); }
+    .settings-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--xq-purple);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px dashed var(--xq-border);
+      letter-spacing: 0.3px;
+    }
+    .settings-group-title i { font-size: 12px; width: 14px; text-align: center; }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 7px;
+    }
+    .settings-row:last-child { margin-bottom: 0; }
+    .settings-label {
+      font-size: 12px;
+      color: var(--xq-text);
+      font-weight: 600;
+    }
+    .settings-label small {
+      display: block;
+      font-size: 10px;
+      color: var(--xq-muted);
+      font-weight: 400;
+      margin-top: 1px;
+    }
+    .settings-label i { color: var(--xq-steel); font-size: 11px; margin-right: 5px; }
+    .settings-value { flex-shrink: 0; }
+    .settings-value.flex { display: flex; gap: 6px; align-items: center; flex: 1; max-width: 65%; justify-content: flex-end; }
+
+    .xq-btn {
+      padding: 9px 18px;
+      border-radius: var(--xq-radius);
+      border: 1px solid var(--xq-border);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: var(--xq-transition);
+      font-family: 'Inter', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .xq-btn--primary {
+      background: var(--xq-accent);
+      color: #0a0a0b;
+      border-color: var(--xq-accent);
+    }
+    .xq-btn--primary:hover { background: #6db03f; color: #fff; }
+    .xq-btn--ghost {
+      background: transparent;
+      color: var(--xq-red);
+    }
+    .xq-btn--ghost:hover { background: rgba(239,83,80,0.08); border-color: var(--xq-red); }
+    .xq-btn--mini { padding: 5px 9px; font-size: 11px; }
+
+    /* Debug panel hidden in layout, shown via settings */
+    .debug-card {
+      background: var(--xq-inset);
+      border: 1px dashed var(--xq-border);
+      border-radius: var(--xq-radius);
+      padding: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--xq-steel);
+      display: none;
+      max-height: 360px;
+      overflow-y: auto;
+      line-height: 1.5;
+    }
+    .debug-card.active { display: block; }
+    .debug-card div { margin-bottom: 2px; word-break: break-all; }
+    .debug-card strong { color: var(--xq-muted); font-weight: 700; }
+
+    .debug-status-row {
+      margin-top: 10px;
+      padding-top: 6px;
+      border-top: 1px dashed var(--xq-border);
+    }
+    .status-dot-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .status-dot {
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .status-dot i {
+      font-size: 8px;
+    }
+    .status-dot.ok i { color: var(--xq-accent); }
+    .status-dot.warn i { color: var(--xq-gold); }
+    .status-dot.err i { color: var(--xq-red); }
+
+    .debug-pre {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--xq-muted);
+      max-height: 80px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 6px;
+      border-radius: var(--xq-radius);
+      white-space: pre-wrap;
+    }
+
+    .debug-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px 8px;
+      color: var(--xq-muted);
+    }
+    .debug-grid strong { color: #fff; font-weight: 600; }
+    .debug-grid .span-2 { grid-column: span 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--xq-inset); }
+    ::-webkit-scrollbar-thumb { background: var(--xq-border); border-radius: var(--xq-radius); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--xq-dim); }
+    * { scrollbar-width: thin; scrollbar-color: var(--xq-border) var(--xq-inset); }
+
+    /* Responsive mobile */
+    @media (max-width: 768px) {
+      header { padding: 10px 14px; gap: 10px; flex-direction: column; }
+      .nav-links { width: 100%; justify-content: center; flex-wrap: wrap; }
+      .main-container { padding: 10px; }
+      .btn-action .btn-text { display: none; }
+      .btn-action { padding: 8px; }
+      .eval-move { font-size: 16px; }
+      .eval-score { font-size: 18px; }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="header-logo">
+      <i class="fa-solid fa-yin-yang" style="color:var(--xq-gold);"></i>
+      <span>XIANGQI BATTLE</span>
+    </a>
+
+    <div style="display:flex; align-items:center; gap:12px;">
+      <label for="select-engine-mode" style="font-size:12px; font-weight:700; color:#ffffff; display:flex; align-items:center; gap:5px;">
+        <i class="fa-solid fa-microchip" style="color:var(--xq-purple);"></i> ENGINE:
+      </label>
+      <select id="select-engine-mode">
+        <option value="MAXIMUM" selected>MAXIMUM (Bất Khả Chiến Bại / Depth 30+)</option>
+        <option value="DEEP">DEEP (Phân Tích Sâu / Depth 22)</option>
+        <option value="HUMAN_GM">ĐẶC CẤP ĐẠI SƯ (ELO 2700+)</option>
+        <option value="BLITZ_5M">RAPID (Cờ Nhanh / 3s)</option>
+        <option value="QUICK">BULLET (Cờ Chớp / 1s)</option>
+      </select>
+
+      <label for="select-playstyle" style="font-size:12px; font-weight:700; color:#ffffff; display:flex; align-items:center; gap:5px;">
+        <i class="fa-solid fa-fire" style="color:var(--xq-red);"></i> PHONG CÁCH:
+      </label>
+      <select id="select-playstyle">
+        <option value="NATURAL" selected>POSITIONAL (Thế Trận)</option>
+        <option value="ATTACK">AGGRESSIVE (Công Phá)</option>
+        <option value="TACTICAL">TACTICAL (Bẫy &amp; Sát Cục)</option>
+        <option value="DEFENSE">SOLID (Phòng Thủ Chắc)</option>
+        <option value="AUTO">DYNAMIC (Linh Hoạt)</option>
+      </select>
+    </div>
+
+    <nav class="nav-links">
+      <a href="chess-battle.html" class="nav-link" style="background: rgba(240, 185, 74, 0.15); border: 1px solid rgba(240, 185, 74, 0.4); color: #ffffff; font-weight: 800;">
+        <i class="fa-solid fa-chess-knight" style="color:var(--xq-gold);"></i> <span>CỜ VUA</span>
+      </a>
+      <button id="btnOpenSettings" class="btn-settings" title="Cài đặt &amp; Nâng cao">
+        <i class="fa-solid fa-gear" style="color:var(--xq-purple);"></i>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Alert Banner -->
+  <div id="engine-alert-banner" style="margin-top: 14px;"></div>
+
+  <!-- Side Selection Prompt Banner -->
+  <div id="side-selection-prompt">
+    <i class="fa-solid fa-robot"></i> BOT Ở PHÍA DƯỚI — Vui lòng chọn bên cho BOT ở bảng bên trái để bắt đầu!
+  </div>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Left Settings Panel -->
+    <aside class="panels-area" style="max-width: 320px;">
+
+      <!-- Panel: Thiết lập ván đấu -->
+      <div class="panel-card">
+        <div class="panel-title"><i class="fa-solid fa-sliders" style="color:var(--xq-steel);"></i> THIẾT LẬP VÁN ĐẤU</div>
+
+        <!-- Bí kíp phối hợp chiến thuật -->
+        <div style="background: rgba(240, 185, 74, 0.08); border: 1px solid rgba(240, 185, 74, 0.25); border-radius: var(--xq-radius); padding: 8px 10px; margin-bottom: 12px; font-size: 0.68rem; line-height: 1.45; color: #ffffff;">
+          <strong style="color: #ffffff; display:block; margin-bottom: 3px; font-size: 0.72rem;"><i class="fa-solid fa-book-open" style="color:var(--xq-gold); margin-right:4px;"></i> PHỐI HỢP CHIẾN THUẬT:</strong>
+          <span style="display:block; margin-bottom:2px;"><b>1. Bất khả chiến bại:</b> Dùng <b>MAXIMUM</b> (Depth 30+).</span>
+          <span style="display:block; margin-bottom:2px;"><b>2. Thế trận vững chắc:</b> Dùng <b>DEEP</b> + <b>POSITIONAL</b>.</span>
+          <span style="display:block; margin-bottom:2px;"><b>3. Công phá áp đảo:</b> Dùng <b>MAXIMUM</b> + <b>AGGRESSIVE</b>.</span>
+          <span style="display:block; margin-bottom:2px;"><b>4. Gài bẫy đòn sát cục:</b> Dùng <b>TACTICAL</b> (Hope Chess).</span>
+          <span style="display:block;"><b>5. Ứng biến toàn diện:</b> Dùng <b>DYNAMIC</b> (Tự thích ứng).</span>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.75rem; font-weight: 800; color: #ffffff; display: block; margin-bottom: 4px;">
+            <i class="fa-solid fa-gamepad" style="color:var(--xq-purple);"></i> CHẾ ĐỘ CHƠI:
+          </label>
+          <select id="select-app-mode" style="width: 100%; margin-bottom: 8px;">
+            <option value="ASSISTANT" selected>TRỢ LÝ (Bot ở dưới - Nhập cờ đối thủ)</option>
+            <option value="PLAY_VS_BOT">LUYỆN TẬP (Bạn ở dưới - Chơi với Bot)</option>
+          </select>
+        </div>
+
+        <label style="font-size: 0.75rem; font-weight: 800; color: #ffffff; display: block; margin-bottom: 4px;">
+          <i class="fa-solid fa-robot" style="color:var(--xq-gold);"></i> CHỌN BÊN CHO BOT:
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+          <button id="btn-choose-red" class="btn-side-toggle red">
+            <i class="fa-solid fa-circle" style="color:var(--xq-red);"></i> BOT ĐỎ (ĐI TRƯỚC)
+          </button>
+          <button id="btn-choose-black" class="btn-side-toggle black">
+            <i class="fa-solid fa-circle" style="color:#78909c;"></i> BOT ĐEN (ĐI SAU)
+          </button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--xq-border); padding-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="chk-auto-move" checked />
+            <label for="chk-auto-move" style="font-size: 0.78rem; font-weight: 700; color: #ffffff; cursor: pointer;">
+              Tự động thực hiện nước cờ cho BOT
+            </label>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="chk-engine-truth" />
+            <label for="chk-engine-truth" style="font-size: 0.78rem; font-weight: 700; color: #ffffff; cursor: pointer;">
+              Engine Truth Mode (100% Thuần Máy)
+            </label>
+          </div>
+        </div>
+
+        <!-- Nhập nước cờ (UCCI/SAN) -->
+        <div style="margin-top: 10px; border-top: 1px solid var(--xq-border); padding-top: 8px;">
+          <label style="font-size: 0.75rem; font-weight: 800; color: #ffffff; display: block; margin-bottom: 4px;">
+            <i class="fa-solid fa-keyboard" style="color:var(--xq-accent);"></i> NHẬP NƯỚC CỜ (UCCI / Tên nước):
+          </label>
+          <input type="text" id="input-opponent-move" placeholder="Nhập nước đi rồi nhấn Enter (vd: h2e2, b2e2...)" style="width: 100%;">
+          <div id="move-input-error" style="color:var(--xq-red); font-size:0.72rem; font-weight:700; margin-top:4px; display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Move History Panel -->
+      <div class="panel-card">
+        <div class="panel-title"><i class="fa-solid fa-list-ol" style="color:var(--xq-steel);"></i> BIÊN BẢN VÁN ĐẤU</div>
+        <div id="move-history-list" class="move-history-container"></div>
+      </div>
+
+    </aside>
+
+    <!-- Center Game Area (Board) -->
+    <section class="game-area">
+      <div class="board-header-bar">
+        <div>
+          <span id="turn-indicator" style="font-weight: 700; font-size: 13px;">
+            <i class="fa-solid fa-circle-exclamation"></i> Vui Lòng Chọn Bên Cho BOT
+          </span>
+        </div>
+        <div class="header-right-group">
+          <div id="bot-bottom-indicator" class="bot-perspective-indicator">
+            <i class="fa-solid fa-robot"></i> BOT DƯỚI
+          </div>
+          <span id="game-status-badge" class="status-badge neutral">
+            <i class="fa-solid fa-hourglass-half"></i> CHỌN BÊN
+          </span>
+        </div>
+      </div>
+
+      <!-- Board Render Target -->
+      <div id="xiangqi-board-app"></div>
+
+      <!-- Controls -->
+      <div class="board-controls-bar">
+        <button id="btn-rewind" class="btn-action"><i class="fa-solid fa-backward-fast"></i> <span class="btn-text">Về Đầu</span></button>
+        <button id="btn-undo" class="btn-action"><i class="fa-solid fa-rotate-left"></i> <span class="btn-text">Hoàn Nước</span></button>
+        <button id="btn-redo" class="btn-action"><i class="fa-solid fa-rotate-right"></i> <span class="btn-text">Đi Tiếp</span></button>
+        <button id="btn-reset" class="btn-action"><i class="fa-solid fa-rotate"></i> <span class="btn-text">Ván Mới</span></button>
+      </div>
+    </section>
+
+    <!-- Right Side Panels (Engine Analysis & AI Coach) -->
+    <aside class="panels-area" style="max-width: 340px;">
+
+      <!-- Engine Analysis Panel -->
+      <div id="analysis-panel" class="panel-card">
+        <div class="panel-title"><i class="fa-solid fa-microchip" style="color:var(--xq-purple);"></i> PHÂN TÍCH ENGINE</div>
+
+        <!-- Active Engine Badge -->
+        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--xq-inset); padding:6px 10px; border-radius:var(--xq-radius); margin-bottom:8px; border:1px solid var(--xq-border);">
+          <span style="font-size:0.72rem; font-weight:800; color:#ffffff;">ENGINE:</span>
+          <span id="engineBadgeText" style="font-size:0.72rem; font-weight:800; color:var(--xq-accent);">
+            <i class="fa-solid fa-circle-check"></i> FAIRY-STOCKFISH XIANGQI
+          </span>
+        </div>
+
+        <div class="eval-box">
+          <div class="eval-main">
+            <span id="best-move-display" class="eval-move">Chưa chọn bên</span>
+            <span id="eval-display" class="eval-score">+0.00</span>
+          </div>
+          <div class="eval-meta">
+            <span>Độ sâu: <strong id="depth-display">-</strong></span>
+            <span>Tốc độ: <strong id="nps-display">-</strong></span>
+          </div>
+        </div>
+
+        <!-- AI Coach Explanation Box -->
+        <div style="margin-top: 8px;">
+          <div style="font-size: 0.72rem; font-weight: 800; color: #ffffff; margin-bottom: 4px;">
+            <i class="fa-solid fa-user-graduate" style="color:var(--xq-gold);"></i> GIẢI THÍCH CHIẾN THUẬT:
+          </div>
+          <div id="ai-explanation-display" class="ai-explanation">
+            Vui lòng chọn <b>BOT ĐỎ</b> hoặc <b>BOT ĐEN</b> để bắt đầu phân tích.
+          </div>
+        </div>
+
+        <div class="multipv-title" style="margin-top:10px; color:#ffffff; font-weight:800;">
+          <i class="fa-solid fa-list-ol" style="color:var(--xq-steel);"></i> TOP NƯỚC ĐI TỐT NHẤT:
+        </div>
+        <div id="multipv-container" class="multipv-container"></div>
+      </div>
+
+      <!-- Debug Card - Hidden by default, toggled via Settings -->
+      <div id="debugCard" class="debug-card">
+        <div style="font-weight:800; border-bottom:1px solid #3a3a40; padding-bottom:4px; margin-bottom:6px; color:var(--xq-steel); font-size: 11px;">
+          <i class="fa-solid fa-terminal"></i> ENGINE TELEMETRY &amp; DEBUG
+        </div>
+        <div class="debug-grid">
+          <div>Engine: <strong id="debug-source">WASM</strong></div>
+          <div>Phiên bản: <strong id="debug-version">v1.0</strong></div>
+          <div>Side To Move: <strong id="debug-side-to-move" style="color:var(--xq-gold);">RED</strong></div>
+          <div>Bot Side: <strong id="debug-bot-side" style="color:var(--xq-accent);">N/A</strong></div>
+          <div>Player Side: <strong id="debug-player-side" style="color:var(--xq-red);">N/A</strong></div>
+          <div>Bottom Side: <strong id="debug-bottom-side" style="color:var(--xq-steel);">N/A</strong></div>
+          <div class="span-2">Analysis ID: <strong id="debug-analysis-id" style="color:var(--xq-muted);">N/A</strong></div>
+          <div class="span-2">FEN: <strong id="debug-fen" style="color:var(--xq-muted);">N/A</strong></div>
+          <div>Trạng thái: <strong id="debug-status" style="color:var(--xq-accent);">IDLE</strong></div>
+          <div>Depth: <strong id="debug-depth">0</strong></div>
+          <div>Req Depth: <strong id="debug-req-depth">10</strong></div>
+          <div>Seldepth: <strong id="debug-seldepth">0</strong></div>
+          <div>Nodes: <strong id="debug-nodes">0</strong></div>
+          <div>NPS: <strong id="debug-nps">0</strong></div>
+          <div>RAW Score: <strong id="debug-score">0.00</strong></div>
+          <div>#1 Move: <strong id="debug-bestmove">N/A</strong></div>
+          <div>Move Valid: <strong id="debug-move-valid" style="color:var(--xq-accent);">YES</strong></div>
+          <div>Stale: <strong id="debug-stale-result" style="color:var(--xq-accent);">NO</strong></div>
+          <div>Selected: <strong id="debug-selected" style="color:var(--xq-gold);">NONE</strong></div>
+          <div>Targets: <strong id="debug-legal-targets" style="color:var(--xq-accent);">NONE</strong></div>
+          <div>Current Ply: <strong id="debug-current-ply">0</strong></div>
+          <div class="span-2">Last Error: <strong id="debug-last-error" style="color:var(--xq-red);">NONE</strong></div>
+          <div>Time Used: <strong id="debug-time-used">0ms</strong></div>
+          <div>Time Limit: <strong id="debug-time-limit">3000ms</strong></div>
+          <div>ATM Exit: <strong id="debug-atm-exit">N/A</strong></div>
+          <div>Playstyle: <strong id="debug-playstyle">NATURAL</strong></div>
+          <div>Obj Best: <strong id="debug-obj-best">N/A</strong></div>
+          <div>PS Cand: <strong id="debug-ps-candidate">N/A</strong></div>
+          <div>Eval Gap: <strong id="debug-eval-gap">0 cp</strong></div>
+          <div>Final: <strong id="debug-final-move" style="color:var(--xq-accent);">N/A</strong></div>
+          <div>Executed: <strong id="debug-executed-move" style="color:var(--xq-accent);">N/A</strong></div>
+        </div>
+
+        <div class="debug-status-row">
+          <div class="status-dot-wrapper">
+            <span id="engine-status-dot" class="status-dot ok"><i class="fa-solid fa-circle"></i> Engine OK</span>
+            <button id="btn-run-benchmark" class="xq-btn xq-btn--ghost xq-btn--mini">
+              <i class="fa-solid fa-bolt"></i> Benchmark
+            </button>
+          </div>
+          <pre id="benchmark-results" class="debug-pre"></pre>
+        </div>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ================ SETTINGS MODAL ================ -->
+  <div id="settingsModal" class="xq-modal">
+    <div class="xq-modal__panel">
+      <div class="xq-modal__head">
+        <h3 class="xq-modal__title"><i class="fa-solid fa-gear"></i> CÀI ĐẶT &amp; NÂNG CAO</h3>
+        <button type="button" id="btnCloseSettings" class="xq-modal__close">&times;</button>
+      </div>
+
+      <div class="settings-grid">
+
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="fa-solid fa-wrench"></i> CÔNG CỤ &amp; DEBUG
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-terminal"></i> Debug Telemetry
+              <small>Hiện bảng thông số chi tiết engine</small>
+            </div>
+            <div class="settings-value">
+              <button id="btnToggleDebug" class="xq-btn xq-btn--ghost xq-btn--mini">
+                <i class="fa-solid fa-eye"></i> Toggle
+              </button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-gauge-high"></i> Chạy Benchmark
+              <small>Đo hiệu năng thực tế engine</small>
+            </div>
+            <div class="settings-value">
+              <button id="btnRunBenchFromSettings" class="xq-btn xq-btn--mini" style="background:var(--xq-gold); color:#0a0a0b; border-color:var(--xq-gold); font-weight:800;">
+                <i class="fa-solid fa-bolt"></i> Run
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="fa-solid fa-microchip"></i> CẤU HÌNH ENGINE
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-microchip"></i> Threads
+              <small>Số luồng tính toán</small>
+            </div>
+            <div class="settings-value">
+              <select id="selThreads">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="8" selected>8</option>
+                <option value="16">16</option>
+              </select>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-memory"></i> Hash (MB)
+              <small>Bộ nhớ bảng băm</small>
+            </div>
+            <div class="settings-value">
+              <select id="selHash">
+                <option value="64">64</option>
+                <option value="128">128</option>
+                <option value="256" selected>256</option>
+                <option value="512">512</option>
+                <option value="1024">1024</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">
+            <i class="fa-solid fa-palette"></i> GIAO DIỆN
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Hiệu ứng
+              <small>Animation &amp; chuyển động</small>
+            </div>
+            <div class="settings-value">
+              <input type="checkbox" id="chkAnim" checked>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <i class="fa-solid fa-text-height"></i> Kích thước quân cờ
+              <small>Độ lớn quân trên bàn</small>
+            </div>
+            <div class="settings-value">
+              <select id="selPieceSize">
+                <option value="sm">Nhỏ</option>
+                <option value="md" selected>Chuẩn</option>
+                <option value="lg">Lớn</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="margin-top: 14px; text-align: right;">
+        <button id="btnOkSettings" class="xq-btn xq-btn--primary">
+          <i class="fa-solid fa-check"></i> XONG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Xiangqi Engine Scripts -->
+  <script src="js/xiangqi/coordinate-mapper.js"></script>
+  <script src="js/xiangqi/position-manager.js"></script>
+  <script src="js/xiangqi/move-generator.js"></script>
+  <script src="js/xiangqi/move-validator.js"></script>
+  <script src="js/xiangqi/move-converter.js"></script>
+  <script src="js/xiangqi/game-state.js"></script>
+  <script src="js/xiangqi/board-renderer.js"></script>
+  <script src="js/xiangqi/engine-adapter.js"></script>
+  <script src="js/xiangqi/engine-manager.js"></script>
+  <script src="js/xiangqi/analysis-manager.js"></script>
+  <script src="js/xiangqi/adaptive-time-manager.js"></script>
+  <script src="js/xiangqi/opening-diversity-manager.js"></script>
+  <script src="js/xiangqi/tactical-detector.js"></script>
+  <script src="js/xiangqi/playstyle-layer.js"></script>
+  <script src="js/xiangqi/ai-explanation.js"></script>
+  <script src="js/xiangqi/telemetry.js"></script>
+  <script src="js/xiangqi/ui-controller.js"></script>
+
+  <script>
+    // Settings modal handlers + UI polish (non-destructive to app logic)
+    document.addEventListener('DOMContentLoaded', function () {
+      const modal = document.getElementById('settingsModal');
+      const openBtn = document.getElementById('btnOpenSettings');
+      const closeBtn = document.getElementById('btnCloseSettings');
+      const okBtn = document.getElementById('btnOkSettings');
+      const debugCard = document.getElementById('debugCard');
+      const btnToggleDebug = document.getElementById('btnToggleDebug');
+
+      function openModal() { modal.classList.add('active'); }
+      function closeModal() { modal.classList.remove('active'); }
+
+      if (openBtn) openBtn.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (okBtn) okBtn.addEventListener('click', closeModal);
+      if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+      if (btnToggleDebug && debugCard) {
+        btnToggleDebug.addEventListener('click', () => {
+          debugCard.classList.toggle('active');
+          btnToggleDebug.innerHTML = debugCard.classList.contains('active')
+            ? '<i class="fa-solid fa-eye-slash"></i> Hide'
+            : '<i class="fa-solid fa-eye"></i> Toggle';
+        });
+      }
+
+      // Also forward click from settings "Run Benchmark" to existing button
+      const btnBenchSettings = document.getElementById('btnRunBenchFromSettings');
+      const btnBenchMain = document.getElementById('btn-run-benchmark');
+      if (btnBenchSettings && btnBenchMain) {
+        btnBenchSettings.addEventListener('click', (e) => {
+          e.preventDefault();
+          btnBenchMain.click();
+          closeModal();
+          setTimeout(() => debugCard && debugCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        });
+      }
+
+      // Escape closes modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.xq-modal.active').forEach(m => m.classList.remove('active'));
+        }
+      });
+
+      // Forward engine config changes (optional)
+      document.getElementById('selThreads')?.addEventListener('change', (e) => {
+        window.dispatchEvent(new CustomEvent('engine-config', { detail: { threads: parseInt(e.target.value) } }));
+      });
+      document.getElementById('selHash')?.addEventListener('change', (e) => {
+        window.dispatchEvent(new CustomEvent('engine-config', { detail: { hash: parseInt(e.target.value) } }));
+      });
+    });
+  </script>
+</body>
+</html>

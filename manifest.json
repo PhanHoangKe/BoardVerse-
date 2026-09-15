@@ -1,0 +1,19 @@
+{
+  "name": "BoardVerse AI — Đấu Trường Cờ Vua & Cờ Tướng",
+  "short_name": "BoardVerse",
+  "description": "Trợ lý & Đấu trường Trí tuệ Nhân tạo Cờ Vua và Cờ Tướng với động cơ Stockfish 18 & Fairy-Stockfish",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

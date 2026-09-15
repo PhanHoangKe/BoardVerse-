@@ -1,0 +1,43 @@
+# Biến môi trường — chứa password, secrets
+.env
+
+# Dữ liệu người dùng runtime — không overwrite khi deploy
+data/
+db.json
+
+# File upload của người dùng
+uploads/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup / file tạm — không commit
+*.bak
+*.backup_pre_fix
+*_fixed.html
+*_ftfy.html
+fix_*.py
+__pycache__/
+*.pyc
+
+# Runtime state (AI Gia Sư)
+ai-tutor/review_queue.json
+
+# Native C++ Binaries & Large NNUE files (>100MB - not for git/web)
+*.exe
+*.dll
+*.so
+*.dylib
+*.nnue
+*.zip
+*.tar
+*.gz
+*.7z
+backend/stockfish-native/
+backend/xiangqi-native/
+

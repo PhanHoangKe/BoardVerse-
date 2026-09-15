@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoardVerse Battle — Trợ Lý &amp; Đấu Trường Cờ Vua / Cờ Tướng AI</title>
+
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a0b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BoardVerse">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+    </script>
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chess Battle Stylesheet -->
+    <link rel="stylesheet" href="css/chess-battle.css?v=3.5">
+</head>
+<body>
+
+    <!-- Header Navigation Bar -->
+    <header class="cb-header">
+        <div class="cb-brand">
+            <i class="fa-solid fa-chess-knight" style="color:var(--cb-gold);"></i>
+            <span>CHESS BATTLE</span>
+        </div>
+        <div class="cb-header-controls">
+            <label for="selectPresetMode">
+                <i class="fa-solid fa-microchip" style="color:var(--cb-cyan);"></i> ENGINE:
+            </label>
+            <select id="selectPresetMode" class="cb-select cb-select--nav">
+                <option value="MAXIMUM" selected>MAXIMUM (Bất Khả Chiến Bại / Depth 38+)</option>
+                <option value="DEEP">DEEP (Phân Tích Sâu / Depth 28)</option>
+                <option value="HUMAN_GM">GRANDMASTER (Đại Kiện Tướng ELO 2800)</option>
+                <option value="BLITZ_5M">RAPID (Cờ Nhanh / 3s)</option>
+                <option value="QUICK">BULLET (Cờ Chớp / 1s)</option>
+            </select>
+
+            <label for="selectPlayStyle">
+                <i class="fa-solid fa-swords" style="color:var(--cb-rose);"></i> PHONG CÁCH:
+            </label>
+            <select id="selectPlayStyle" class="cb-select cb-select--nav">
+                <option value="NATURAL" selected>POSITIONAL (Thế Trận)</option>
+                <option value="AGGRESSIVE">AGGRESSIVE (Tấn Công)</option>
+                <option value="TACTICAL">TACTICAL (Chiến Thuật / Bẫy)</option>
+                <option value="DEFENSE">SOLID (Phòng Thủ Chắc)</option>
+                <option value="AUTO">DYNAMIC (Linh Hoạt)</option>
+            </select>
+
+            <!-- GAME MODE SWITCHER (CỜ VUA / CỜ TƯỚNG) -->
+            <div class="game-mode-tabs" style="display:flex; background:rgba(0,0,0,0.6); padding:3px; border:1px solid var(--cb-border); border-radius:var(--cb-radius); margin-right:4px; gap:4px;">
+                <button type="button" id="tabSwitchChess" class="btn-game-tab active" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:var(--cb-radius); border:none; cursor:pointer; background:var(--cb-gold); color:#0a0a0b; transition:var(--cb-transition); display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-chess-knight"></i> CỜ VUA
+                </button>
+                <button type="button" id="tabSwitchXiangqi" class="btn-game-tab" style="padding:5px 12px; font-size:11.5px; font-weight:800; border-radius:var(--cb-radius); border:none; cursor:pointer; background:transparent; color:var(--cb-text-muted); transition:var(--cb-transition); display:flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-yin-yang" style="color:var(--cb-rose);"></i> CỜ TƯỚNG
+                </button>
+            </div>
+
+            <button type="button" id="btnGameArchive" class="btn-cb-nav">
+                <i class="fa-solid fa-box-archive" style="color:var(--cb-accent);"></i> <span class="btn-text">Kho</span>
+            </button>
+            <button type="button" id="btnOpenSettings" class="btn-cb-settings" title="Cài đặt &amp; Tùy chọn nâng cao">
+                <i class="fa-solid fa-gear" style="color:var(--cb-purple);"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <main class="cb-main-container">
+
+        <!-- LEFT PANEL: Game Setup & Mode Selection -->
+        <section class="cb-card cb-card-left">
+            <div class="cb-card-title">
+                <i class="fa-solid fa-sliders" style="color:var(--cb-steel);"></i> THIẾT LẬP VÁN ĐẤU
+            </div>
+
+            <!-- Engine Health Telemetry Status Bar -->
+            <div>
+                <label class="cb-field-label" style="margin-bottom:4px;">
+                    <i class="fa-solid fa-server" style="color:var(--cb-steel);"></i> TRẠNG THÁI ENGINE
+                </label>
+                <div class="engine-health-bar">
+                    <span id="healthNativeEngine" class="badge-health"><span class="status-indicator-dot"></span> Native</span>
+                    <span id="healthLocalEngine" class="badge-health"><span class="status-indicator-dot"></span> WASM</span>
+                    <span id="healthCloudEngine" class="badge-health"><span class="status-indicator-dot"></span> Cloud</span>
+                    <span id="healthTablebase" class="badge-health"><span class="status-indicator-dot"></span> Syzygy</span>
+                    <span id="healthOpeningDb" class="badge-health"><span class="status-indicator-dot"></span> Lichess</span>
+                </div>
+            </div>
+
+            <!-- Collapsible: Bí kíp phối hợp -->
+            <div>
+                <div class="cb-section-toggle" id="toggleTips">
+                    <label class="cb-field-label" style="margin:0;">
+                        <i class="fa-solid fa-lightbulb" style="color:var(--cb-gold);"></i> BÍ KÍP CHƠI
+                    </label>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </div>
+                <div class="cb-collapsible-content" id="tipsContent" style="margin-top:8px;">
+                    <div class="cb-panel--gold" style="padding:6px 8px;">
+                        <i class="fa-solid fa-book-open" style="font-size:12px;"></i>
+                        <div style="line-height: 1.45; color:#ffffff; font-size:0.68rem;">
+                            <strong style="color: #ffffff; display:block; margin-bottom: 3px; font-size: 0.72rem;">PHỐI HỢP CHIẾN THUẬT:</strong>
+                            <span style="color:#ffffff; display:block; margin-bottom:2px;"><b>1. Bất khả chiến bại:</b> Dùng <b>MAXIMUM</b> (Depth 38+).</span>
+                            <span style="color:#ffffff; display:block; margin-bottom:2px;"><b>2. Thế trận vững chắc:</b> Dùng <b>DEEP</b> + <b>POSITIONAL</b>.</span>
+                            <span style="color:#ffffff; display:block; margin-bottom:2px;"><b>3. Công phá áp đảo:</b> Dùng <b>MAXIMUM / DEEP</b> + <b>AGGRESSIVE</b>.</span>
+                            <span style="color:#ffffff; display:block; margin-bottom:2px;"><b>4. Gài bẫy đòn phối hợp:</b> Dùng <b>TACTICAL</b> (Hope Chess).</span>
+                            <span style="color:#ffffff; display:block;"><b>5. Ứng biến toàn diện:</b> Dùng <b>DYNAMIC</b> (Tự thích ứng).</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MỤC ĐÍCH SỬ DỤNG (CHẾ ĐỘ) -->
+            <div>
+                <label class="cb-field-label"><i class="fa-solid fa-gamepad" style="color:var(--cb-purple);"></i> CHẾ ĐỘ CHƠI:</label>
+                <select id="selectAppMode" class="cb-select cb-select--full" style="margin-bottom: 12px;">
+                    <option value="ASSISTANT" selected>TRỢ LÝ (Bot ở dưới - Nhập cờ đối thủ)</option>
+                    <option value="PLAY_VS_BOT">LUYỆN TẬP (Bạn ở dưới - Chơi với Bot)</option>
+                </select>
+
+                <label id="lblSideChoice" class="cb-field-label">
+                    <i class="fa-solid fa-robot" style="color:var(--cb-gold);"></i> CHỌN BÊN CHO BOT:
+                </label>
+                <div class="side-selector-group">
+                    <button type="button" id="btnBotWhite" class="btn-side-choice">
+                        <i class="fa-solid fa-chess-king king-icon--w"></i>
+                        <span id="lblBtnBotWhite">BOT CẦM TRẮNG</span>
+                    </button>
+                    <button type="button" id="btnBotBlack" class="btn-side-choice">
+                        <i class="fa-solid fa-chess-king king-icon--b"></i>
+                        <span id="lblBtnBotBlack">BOT CẦM ĐEN</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Auto-Apply & Opponent Suggestion Checkboxes -->
+            <div class="cb-panel" style="display:flex; flex-direction:column; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="chkAutoApplyMove" checked>
+                    <label for="chkAutoApplyMove" id="lblAutoApplyMove" style="font-size:0.82rem; font-weight:700; color:#ffffff; cursor:pointer;">
+                        Tự động thực hiện nước cờ đề xuất cho BOT
+                    </label>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; border-top:1px solid var(--cb-border); padding-top:8px; flex-wrap: wrap;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" id="chkOpponentSuggestions">
+                        <label for="chkOpponentSuggestions" id="lblOpponentSuggestions" style="font-size:0.82rem; font-weight:700; color:#ffffff; cursor:pointer;">
+                            Gợi ý nước đi khi đến lượt đối thủ
+                        </label>
+                    </div>
+                    <select id="selectCoachPreset" class="cb-select cb-select--inline" style="display:none; margin-left: 28px;">
+                        <option value="MAXIMUM" selected>Coach: MAXIMUM (Bất Bại / Depth 38+)</option>
+                        <option value="DEEP">Coach: DEEP (Phân Tích Sâu / Depth 28)</option>
+                        <option value="HUMAN_GM">Coach: GRANDMASTER (ELO 2800)</option>
+                        <option value="BLITZ_5M">Coach: RAPID (Cờ Nhanh / 3s)</option>
+                        <option value="QUICK">Coach: BULLET (Cờ Chớp / 1s)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Opponent Move Input (SAN/UCI) - NHANH NHẤT NÊN BÊN NGOÀI -->
+            <div class="cb-panel">
+                <label class="cb-field-label">
+                    <i class="fa-solid fa-keyboard" style="color:var(--cb-accent);"></i> NHẬP NƯỚC CỜ (SAN/UCI):
+                </label>
+                <div>
+                    <input type="text" id="inputOpponentSan" placeholder="Nhập nước đi rồi nhấn Enter (vd: e4, Nf3, e2e4...)" class="cb-input" style="width:100%;">
+                </div>
+                <div id="moveErrorFeedback" style="color:var(--cb-rose); font-size:0.78rem; font-weight:700; margin-top:6px; display:none;"></div>
+            </div>
+
+        </section>
+
+        <!-- CENTER PANEL: Chess Board & Evaluation Bar -->
+        <section class="cb-card cb-card-center" style="align-items:center;">
+            <div class="board-wrapper-container">
+
+                <!-- Dynamic Evaluation Bar -->
+                <div class="eval-bar-container">
+                    <span id="evalScoreValueText" class="eval-score-badge">+0.00</span>
+                    <div id="evalBarFill" class="eval-bar-fill"></div>
+                </div>
+
+                <!-- 8x8 Chess Board Grid & Arrow Overlay -->
+                <div id="chessBoardWrapper" style="position: relative; overflow: hidden; border-radius: var(--cb-radius); width:100%;">
+                    <div id="chessBoardGrid" class="chess-board-grid"></div>
+                    <svg id="arrowOverlay" viewBox="0 0 100 100" preserveAspectRatio="none" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100; display:none;">
+                        <defs>
+                            <marker id="arrowhead-green" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+                                <polygon points="0 0, 4 2, 0 4" fill="rgba(124, 196, 79, 0.85)"></polygon>
+                            </marker>
+                            <marker id="arrowhead-red" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+                                <polygon points="0 0, 4 2, 0 4" fill="rgba(239, 83, 80, 0.85)"></polygon>
+                            </marker>
+                            <marker id="arrowhead-blue" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+                                <polygon points="0 0, 4 2, 0 4" fill="rgba(122, 162, 217, 0.85)"></polygon>
+                            </marker>
+                            <marker id="arrowhead-purple" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+                                <polygon points="0 0, 4 2, 0 4" fill="rgba(171, 116, 226, 0.85)"></polygon>
+                            </marker>
+                        </defs>
+                    </svg>
+                </div>
+
+                <!-- 9x10 Xiangqi Board Grid -->
+                <div id="xiangqiBoardWrapper" style="position: relative; overflow: visible; border-radius: var(--cb-radius); display: none; width: 100%;">
+                    <div id="xiangqi-board-app" class="xiangqi-board-app" style="width: 100%; aspect-ratio: 9/10; position: relative; overflow: visible;"></div>
+                    <svg id="arrowOverlayXiangqi" viewBox="0 0 900 1000" preserveAspectRatio="none" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100; display:none;">
+                        <defs>
+                            <filter id="xq-arrow-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.85"/>
+                            </filter>
+                            <marker id="xq-arrowhead-green" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" refX="20" refY="13" orient="auto">
+                                <path d="M 4 4 L 22 13 L 4 22 Z" fill="rgba(34, 197, 94, 0.98)" />
+                            </marker>
+                            <marker id="xq-arrowhead-gold" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" refX="20" refY="13" orient="auto">
+                                <path d="M 4 4 L 22 13 L 4 22 Z" fill="rgba(245, 158, 11, 0.98)" />
+                            </marker>
+                            <marker id="xq-arrowhead-blue" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" refX="20" refY="13" orient="auto">
+                                <path d="M 4 4 L 22 13 L 4 22 Z" fill="rgba(56, 189, 248, 0.98)" />
+                            </marker>
+                            <marker id="xq-arrowhead-purple" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" refX="20" refY="13" orient="auto">
+                                <path d="M 4 4 L 22 13 L 4 22 Z" fill="rgba(168, 85, 247, 0.98)" />
+                            </marker>
+                            <marker id="xq-arrowhead-red" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" refX="20" refY="13" orient="auto">
+                                <path d="M 4 4 L 22 13 L 4 22 Z" fill="rgba(239, 68, 68, 0.98)" />
+                            </marker>
+                        </defs>
+                        <g id="arrowGroupXiangqi"></g>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Board Action Bar: Điều hướng | Reset | Phân tích | Báo cáo -->
+            <div class="cb-action-bar">
+                <button type="button" id="btnRewindStart" class="btn-cb-action" title="Về vị trí bắt đầu">
+                    <i class="fa-solid fa-backward-fast"></i>
+                </button>
+                <button type="button" id="btnUndoMove" class="btn-cb-action" title="Lùi 1 nước">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button type="button" id="btnRedoMove" class="btn-cb-action" title="Tiến 1 nước">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+                <button type="button" id="btnFlipBoard" class="btn-cb-action" title="Xoay bàn cờ">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+                <span class="cb-action-sep"></span>
+                <button type="button" id="btnResetBoard" class="btn-cb-action btn-cb-action--danger" title="Đặt lại bàn cờ mới">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="btn-text">Reset</span>
+                </button>
+                <span class="cb-action-sep"></span>
+                <button type="button" id="btnForceAnalyze" class="btn-cb-action btn-cb-action--primary" title="Phân tích thế cờ">
+                    <i class="fa-solid fa-bolt"></i> <span class="btn-text">Phân Tích</span>
+                </button>
+                <button type="button" id="btnStopAnalyze" class="btn-cb-action btn-cb-action--danger" title="Dừng phân tích">
+                    <i class="fa-solid fa-hand"></i> <span class="btn-text">Stop</span>
+                </button>
+                <span class="cb-action-sep"></span>
+                <button type="button" id="btnGameReview" class="btn-cb-action btn-cb-action--gold" title="Tổng kết ván đấu">
+                    <i class="fa-solid fa-chart-simple"></i> <span class="btn-text">Báo Cáo</span>
+                </button>
+            </div>
+        </section>
+
+
+        <!-- RIGHT PANEL: Engine Analysis & Best Move Spotlight -->
+        <section class="cb-card cb-card-right">
+            <div class="cb-card-title">
+                <i class="fa-solid fa-microchip" style="color:var(--cb-purple);"></i> PHÂN TÍCH ENGINE
+            </div>
+
+            <!-- Active Engine Badge Indicator -->
+            <div class="cb-panel" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px;">
+                <span style="font-size:0.72rem; font-weight:800; color:#ffffff;">ENGINE:</span>
+                <span id="activeEngineBadge" class="badge-engine-status unavail"><i class="fa-solid fa-circle-xmark"></i> UNAVAILABLE</span>
+            </div>
+
+            <!-- Engine Analyzing State Box -->
+            <div id="engineAnalyzingStateBox" class="cb-panel" style="text-align:center; padding:10px;">
+                <div id="engineStateTitle" style="font-size:0.88rem; font-weight:800; color:#ffffff;">
+                    CHƯA CHỌN BÊN CHO BOT
+                </div>
+                <div id="engineTelemetrySummary" style="font-size:0.75rem; color:var(--cb-text-muted); margin-top:4px; font-variant-numeric: tabular-nums;">
+                    Depth: - | Nodes: - | NPS: - | Time: -
+                </div>
+            </div>
+
+            <!-- Spotlight Best Move Box -->
+            <div class="recommended-move-spotlight">
+                <div class="spotlight-label">
+                    <i class="fa-solid fa-fire" style="color:var(--cb-orange);"></i> <span id="lblSpotlightTitle">HÃY CHỌN BÊN CHO BOT</span>
+                </div>
+                <div id="recommendedBestMoveText" class="spotlight-move-val">-</div>
+                <div id="evalStatusText" style="font-size:0.82rem; font-weight:700; color:#ffffff;">Chưa chọn bên cho Bot</div>
+                <div id="engineSourceBadge" style="font-size:0.72rem; font-weight:700; color:#94a3b8; margin-top:4px;">Source: -</div>
+            </div>
+
+            <!-- Engine Stats Grid -->
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                <div class="cb-stat">
+                    <div class="cb-stat-label">DEPTH</div>
+                    <div id="statEngineDepth" class="cb-stat-value">-</div>
+                </div>
+                <div class="cb-stat">
+                    <div class="cb-stat-label">NODES</div>
+                    <div id="statEngineNodes" class="cb-stat-value">-</div>
+                </div>
+                <div class="cb-stat">
+                    <div class="cb-stat-label">NPS</div>
+                    <div id="statEngineNps" class="cb-stat-value">-</div>
+                </div>
+            </div>
+
+            <!-- Top 3 Moves List -->
+            <div>
+                <label class="cb-field-label">
+                    <i class="fa-solid fa-list-ol" style="color:var(--cb-steel);"></i> TOP NƯỚC ĐI:
+                </label>
+                <div id="topMovesListContainer" class="top-moves-list"></div>
+            </div>
+
+            <!-- Best Line PV -->
+            <div>
+                <label class="cb-field-label" style="margin-bottom:4px;">
+                    <i class="fa-solid fa-code-branch" style="color:var(--cb-purple);"></i> BIẾN THỂ CHÍNH:
+                </label>
+                <div id="bestLineText" class="cb-code">-</div>
+            </div>
+
+            <!-- Giai Đoạn Trận Đấu -->
+            <div id="gamePhaseContainer" class="cb-panel--info" style="margin-bottom:2px; display:none;">
+                <strong style="display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:0.85rem; color:#ffffff;">
+                    <i class="fa-solid fa-chess-board" style="color:var(--cb-cyan);"></i> <span id="gamePhaseTitle">KHAI CUỘC</span>
+                </strong>
+                <span id="gamePhaseGuidance" style="line-height: 1.5; font-size:0.78rem; color:#ffffff;">-</span>
+            </div>
+
+            <!-- AI Natural Commentary Explanation (Only shown in Practice / Play vs Bot mode) -->
+            <div id="aiExplanationSection" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label class="cb-field-label" style="margin-bottom:0;">
+                        <i class="fa-solid fa-brain" style="color:var(--cb-indigo);"></i> GIẢI THÍCH:
+                    </label>
+                    <button type="button" id="btnExplainMove" class="cb-btn-mini" title="Hiển thị mũi tên mô phỏng">
+                        <i class="fa-solid fa-diagram-project" style="color:var(--cb-purple);"></i> Tại sao?
+                    </button>
+                </div>
+                <div id="aiExplanationTextContent" class="ai-commentary-box">
+                    Vui lòng chọn <i class="fa-solid fa-chess-king king-icon--w" style="font-size:14px;"></i> <b>BOT TRẮNG</b> hoặc <i class="fa-solid fa-chess-king king-icon--b" style="font-size:14px;"></i> <b>BOT ĐEN</b> để bắt đầu.
+                </div>
+            </div>
+
+            <div id="engineStatusIndicator" class="cb-status-line">
+                HÃY CHỌN BÊN CHO BOT
+            </div>
+
+            <!-- Debug Panel (hidden by default, toggle via settings) -->
+            <div id="engineDebugPanel" class="debug-panel-box">
+                <div style="font-weight:800; border-bottom:1px solid #3a3a40; padding-bottom:4px; margin-bottom:6px; color:#ffffff;">
+                    <i class="fa-solid fa-microchip" style="color:var(--cb-steel);"></i> ENGINE TELEMETRY &amp; DEBUG
+                </div>
+                <div><strong>ENGINE VERSION:</strong> <span id="debugEngineVersionText">-</span></div>
+                <div><strong>ENGINE SOURCE:</strong> <span id="debugSourceText">-</span></div>
+                <div><strong>THREADS:</strong> <span id="debugThreadsText">8</span> | <strong>HASH:</strong> <span id="debugHashText">256MB</span></div>
+                <div><strong>TIME CONTROL:</strong> <span id="debugTimeText">5000ms</span></div>
+                <div><strong>DEPTH:</strong> <span id="debugDepthText">-</span> | <strong>SELDEPTH:</strong> <span id="debugSeldepthText">-</span></div>
+                <div><strong>NODES:</strong> <span id="debugNodesText">-</span> | <strong>NPS:</strong> <span id="debugNpsText">-</span></div>
+                <div><strong>SCORE:</strong> <span id="debugRawScoreText">-</span></div>
+                <div><strong>ESTIMATED STABILITY:</strong> <span id="debugStabilityText" style="font-weight:800;">-</span></div>
+                <div><strong>ADAPTIVE EXIT REASON:</strong> <span id="debugAdaptiveReasonText">-</span></div>
+                <div style="border-top:1px dashed #3a3a40; margin-top:6px; padding-top:6px; color:#ffffff; font-weight:800;">
+                    <i class="fa-solid fa-crosshairs" style="color:var(--cb-gold);"></i> TACTICAL &amp; OPENING:
+                </div>
+                <div><strong>TACTICAL MODE:</strong> <span id="debugTacticalModeText" style="font-weight:800;">-</span></div>
+                <div><strong>TACTICAL TYPE:</strong> <span id="debugTacticalTypeText" style="font-weight:800;">-</span></div>
+                <div><strong>OPENING SYSTEM:</strong> <span id="debugOpeningSystemText" style="font-weight:800;">-</span></div>
+                <div><strong>OPENING MOVE:</strong> <span id="debugOpeningMoveText" style="font-weight:800;">-</span> | <strong>CANDIDATE:</strong> <span id="debugOpeningCandidateText" style="font-weight:800;">-</span></div>
+                <div><strong>TACTICAL OPPORTUNITY:</strong> <span id="debugTacticalOpportunityText" style="font-weight:800;">-</span></div>
+                <div><strong>OBJECTIVE BESTMOVE:</strong> <span id="debugObjectiveBestMoveText" style="font-weight:800;">-</span></div>
+                <div><strong>CANDIDATE MOVE:</strong> <span id="debugPlaystyleCandidateText" style="font-weight:800;">-</span></div>
+                <div><strong>EVALUATION GAP:</strong> <span id="debugEvaluationGapText" style="font-weight:800;">-</span></div>
+                <div><strong>OPPONENT BEST RESPONSE:</strong> <span id="debugOpponentResponseText" style="font-weight:800;">-</span></div>
+                <div><strong>VERIFICATION STATUS:</strong> <span id="debugVerificationStatusText" style="font-weight:800;">-</span></div>
+                <div><strong>MATE STATUS:</strong> <span id="debugMateStatusText" style="font-weight:800;">-</span></div>
+                <div><strong>SACRIFICE STATUS:</strong> <span id="debugSacrificeStatusText" style="font-weight:800;">-</span></div>
+                <div><strong>FINAL SELECTED MOVE:</strong> <span id="debugFinalSelectedMoveText" style="font-weight:800;">-</span></div>
+                <div><strong>SELECTION REASON:</strong> <span id="debugPlaystyleReasonText" style="font-size:0.68rem; word-break:break-all;">-</span></div>
+                <div><strong>BESTMOVE (UCI):</strong> <span id="debugBestMoveUciText">-</span></div>
+                <div><strong>PV LINE:</strong> <span id="debugRawPvText" style="word-break:break-all;">-</span></div>
+                <div><strong>FEN:</strong> <span id="debugFenText" style="word-break:break-all; font-size:0.68rem;">-</span></div>
+                <div><strong>ANALYSIS ID:</strong> <span id="debugAnalysisIdText" style="font-size:0.68rem;">-</span></div>
+            </div>
+
+            <!-- Hidden toggle button (JS uses ID to toggle) -->
+            <button type="button" id="btnToggleDebugPanel" style="display:none;"></button>
+
+        </section>
+
+    </main>
+
+    <!-- ================ SETTINGS MODAL ================ -->
+    <div id="settingsModal" class="cb-modal">
+        <div class="cb-modal__panel cb-modal__panel--settings">
+            <div class="cb-modal__head">
+                <h3 class="cb-modal__title"><i class="fa-solid fa-gear" style="color:var(--cb-purple);"></i> CÀI ĐẶT &amp; NÂNG CAO</h3>
+                <button type="button" id="btnCloseSettings" class="cb-modal__close">&times;</button>
+            </div>
+
+            <div class="cb-settings-grid">
+
+                <!-- Nhóm: Công cụ ván đấu -->
+                <div class="cb-settings-group">
+                    <div class="cb-settings-group-title">
+                        <i class="fa-solid fa-toolbox" style="color:var(--cb-cyan);"></i> CÔNG CỤ VÁN ĐẤU
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-robot" style="color:var(--cb-cyan);"></i> Engine vs Engine
+                            <small>Tự đấu kiểm tra thế cờ</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <button type="button" id="btnEngineVsEngine" class="btn-cb-action" style="padding:6px 10px;">
+                                <i class="fa-solid fa-robot" style="color:var(--cb-cyan);"></i> Chạy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-code" style="color:var(--cb-cyan);"></i> Nạp từ FEN
+                            <small>Thiết lập thế cờ tùy chỉnh</small>
+                        </div>
+                        <div class="cb-settings-value" style="display:flex; gap:6px; flex:1; max-width:60%;">
+                            <input type="text" id="inputFenString" placeholder="rnbqkbnr/pppppppp/..." class="cb-input" style="font-size:0.78rem; padding:6px 8px;">
+                            <button type="button" id="btnLoadFen" class="btn-cb-action btn-cb-action--primary" style="padding:6px 10px;">
+                                Nạp
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-gauge-high" style="color:var(--cb-cyan);"></i> Benchmark Engine
+                            <small>Kiểm tra hiệu năng thực tế</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <button type="button" id="btnRunBenchmark" class="btn-cb-action" style="padding:6px 10px;">
+                                <i class="fa-solid fa-bolt" style="color:var(--cb-gold);"></i> Run
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nhóm: Tùy chọn Huấn luyện -->
+                <div class="cb-settings-group">
+                    <div class="cb-settings-group-title">
+                        <i class="fa-solid fa-chess-queen" style="color:var(--cb-gold);"></i> HUẤN LUYỆN VIÊN (COACH)
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-user-graduate" style="color:var(--cb-gold);"></i> Chọn mức độ Coach
+                            <small>(Áp dụng khi bật Gợi ý đối thủ)</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <!-- Đây là select thứ 2, sẽ sync với selectCoachPreset ở panel ngoài qua JS nếu cần -->
+                            <select id="selectCoachPresetSettings" class="cb-select">
+                                <option value="MAXIMUM" selected>MAXIMUM (Bất Khả Chiến Bại / Depth 38+)</option>
+                                <option value="DEEP">DEEP (Phân Tích Sâu / Depth 28)</option>
+                                <option value="HUMAN_GM">GRANDMASTER (Đại Kiện Tướng ELO 2800)</option>
+                                <option value="BLITZ_5M">RAPID (Cờ Nhanh / 3s)</option>
+                                <option value="QUICK">BULLET (Cờ Chớp / 1s)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-fire" style="color:var(--cb-crimson);"></i> Phong cách chơi
+                            <small>Định hình lối đánh của Engine</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <select id="selectPlayStyleSettings" class="cb-select">
+                                <option value="NATURAL" selected>POSITIONAL (Cân Bằng Thế Trận)</option>
+                                <option value="ATTACK">AGGRESSIVE (Tấn Công Áp Đảo)</option>
+                                <option value="TACTICAL">TACTICAL (Đòn Phối Hợp &amp; Gài Bẫy)</option>
+                                <option value="DEFENSE">SOLID (Phòng Thủ Vững Chắc)</option>
+                                <option value="AUTO">DYNAMIC (Biến Hóa Linh Hoạt)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nhóm: Debug & Telemetry -->
+                <div class="cb-settings-group">
+                    <div class="cb-settings-group-title">
+                        <i class="fa-solid fa-terminal" style="color:var(--cb-steel);"></i> DEBUG &amp; TELEMETRY
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-bug" style="color:var(--cb-steel);"></i> Hiện Debug Panel
+                            <small>Hiển thị thông số engine chi tiết</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <button type="button" id="btnToggleDebugFromSettings" class="btn-cb-action" style="padding:6px 10px;">
+                                <i class="fa-solid fa-eye" style="color:var(--cb-steel);"></i> Toggle
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-microchip" style="color:var(--cb-steel);"></i> Threads / Hash
+                            <small>Cấu hình tài nguyên engine</small>
+                        </div>
+                        <div class="cb-settings-value" style="display:flex; gap:6px;">
+                            <select id="selectEngineThreads" class="cb-select" style="max-width:90px;">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="4">4</option>
+                                <option value="8" selected>8</option>
+                                <option value="16">16</option>
+                            </select>
+                            <select id="selectEngineHash" class="cb-select" style="max-width:110px;">
+                                <option value="64">64MB</option>
+                                <option value="128">128MB</option>
+                                <option value="256" selected>256MB</option>
+                                <option value="512">512MB</option>
+                                <option value="1024">1GB</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nhóm: Giao diện, Quân cờ & Bàn cờ -->
+                <div class="cb-settings-group">
+                    <div class="cb-settings-group-title">
+                        <i class="fa-solid fa-palette" style="color:var(--cb-purple);"></i> BÀN CỜ &amp; QUÂN CỜ
+                    </div>
+
+                    <!-- Chess Theme Settings -->
+                    <div id="chessThemeSettings">
+                        <div class="cb-settings-row">
+                            <div class="cb-settings-label">
+                                <i class="fa-solid fa-chess-knight" style="color:var(--cb-purple);"></i> Bộ quân cờ Vua
+                                <small>Chọn phong cách đồ họa quân cờ</small>
+                            </div>
+                            <div class="cb-settings-value">
+                                <select id="selectPieceTheme" class="cb-select">
+                                    <option value="cburnett" selected>Cburnett (Chuẩn Quốc Tế FIDE)</option>
+                                    <option value="merida">Merida (Thanh Lịch &amp; Phổ Biến)</option>
+                                    <option value="staunty">Staunton (Hoàng Gia Anh Cổ Điển)</option>
+                                    <option value="alpha">Alpha (Gothic Truyền Thống)</option>
+                                    <option value="dubrovny">Dubrovnik (Giải Vô Địch 1950)</option>
+                                    <option value="california">California (Hiện Đại Sắc Nét)</option>
+                                    <option value="cardinal">Cardinal (Sắc Cạnh Vector)</option>
+                                    <option value="fresca">Fresca (Tối Giản Tinh Tế)</option>
+                                    <option value="gioco">Gioco (Đậm Nét Rõ Ràng)</option>
+                                    <option value="governor">Governor (Khắc Gỗ Hoàng Gia)</option>
+                                    <option value="maestro">Maestro (Phong Cách Kiện Tướng)</option>
+                                    <option value="tatiana">Tatiana (Nga Kinh Điển)</option>
+                                    <option value="pirouetti">Pirouetti (Nghệ Thuật Điêu Khắc)</option>
+                                    <option value="pixel">Pixel (Retro 8-Bit)</option>
+                                    <option value="riohacha">Riohacha (Hiện Đại Phá Cách)</option>
+                                    <option value="horsey">Horsey (Độc Đáo &amp; Hài Hước)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cb-settings-row">
+                            <div class="cb-settings-label">
+                                <i class="fa-solid fa-chess-board" style="color:var(--cb-purple);"></i> Màu sắc bàn cờ Vua
+                                <small>Mẫu màu sắc thiết kế sẵn</small>
+                            </div>
+                            <div class="cb-settings-value">
+                                <select id="selectBoardTheme" class="cb-select">
+                                    <option value="green" selected>Tournament Green</option>
+                                    <option value="wood">Classic Wood</option>
+                                    <option value="blue">Midnight Blue</option>
+                                    <option value="dark">Obsidian Dark</option>
+                                    <option value="metal">Icy Metal</option>
+                                    <option value="crimson">Crimson Ruby</option>
+                                    <option value="purple">Cosmic Purple</option>
+                                    <option value="custom">Tùy Chỉnh Màu (Tự Do)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cb-settings-row">
+                            <div class="cb-settings-label">
+                                <i class="fa-solid fa-eye-dropper" style="color:var(--cb-purple);"></i> Tùy chỉnh màu 2 ô cờ
+                                <small>Tự chọn mã màu cho Ô Sáng &amp; Ô Tối</small>
+                            </div>
+                            <div class="cb-settings-value" style="display:flex; align-items:center; gap:8px;">
+                                <label style="font-size:10px; color:var(--cb-text-muted); font-weight:700;">Sáng:</label>
+                                <input type="color" id="inputCustomLightSquare" value="#ebecd0" class="cb-color-input" title="Chọn màu ô sáng">
+                                <label style="font-size:10px; color:var(--cb-text-muted); font-weight:700; margin-left:4px;">Tối:</label>
+                                <input type="color" id="inputCustomDarkSquare" value="#779556" class="cb-color-input" title="Chọn màu ô tối">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Xiangqi Theme Settings -->
+                    <div id="xiangqiThemeSettings" style="display:none;">
+                        <div class="cb-settings-row">
+                            <div class="cb-settings-label">
+                                <i class="fa-solid fa-yin-yang" style="color:var(--cb-purple);"></i> Bộ quân Cờ Tướng
+                                <small>Phong cách khắc chữ &amp; màu sắc quân</small>
+                            </div>
+                            <div class="cb-settings-value">
+                                <select id="selectXiangqiPieceTheme" class="cb-select">
+                                    <option value="classic_gold" selected>Cổ Điển Khắc Vàng (Hoàng Gia)</option>
+                                    <option value="calligraphy">Thư Pháp Truyền Thống</option>
+                                    <option value="modern_wood">Gỗ Tự Nhiên Tương Phản</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cb-settings-row">
+                            <div class="cb-settings-label">
+                                <i class="fa-solid fa-chess-board" style="color:var(--cb-purple);"></i> Bàn cờ Cờ Tướng
+                                <small>Chất liệu gỗ và đường kẻ chỉ</small>
+                            </div>
+                            <div class="cb-settings-value">
+                                <select id="selectXiangqiBoardTheme" class="cb-select">
+                                    <option value="lacquer_dark" selected>Sơn Mài Đen Chỉ Vàng (Obsidian Gold)</option>
+                                    <option value="classic_wood">Gỗ Mộc Cổ Điển (Classic Wood)</option>
+                                    <option value="bamboo_green">Trúc Xanh Nhã Nhặn (Bamboo Green)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--cb-purple);"></i> Hiệu ứng chuyển động
+                            <small>Làm mượt các thao tác</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <input type="checkbox" id="chkAnimations" checked>
+                        </div>
+                    </div>
+                    <div class="cb-settings-row">
+                        <div class="cb-settings-label">
+                            <i class="fa-solid fa-square-caret-down" style="color:var(--cb-purple);"></i> Thu gọn Bí kíp mặc định
+                            <small>Làm giao diện gọn hơn</small>
+                        </div>
+                        <div class="cb-settings-value">
+                            <input type="checkbox" id="chkCollapseTips">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div style="margin-top:16px; text-align:right;">
+                <button type="button" id="btnOkSettings" class="cb-btn cb-btn--primary">
+                    <i class="fa-solid fa-check"></i> XONG
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Benchmark Results Modal -->
+    <div id="benchmarkModal" class="cb-modal">
+        <div class="cb-modal__panel" style="max-width:650px; border-top-color:var(--cb-steel);">
+            <div class="cb-modal__head">
+                <h3 class="cb-modal__title"><i class="fa-solid fa-bolt" style="color:var(--cb-gold);"></i> REAL ENGINE BENCHMARK REPORT</h3>
+                <button type="button" id="btnCloseBenchmarkModal" class="cb-modal__close">&times;</button>
+            </div>
+            <div id="benchmarkContent" class="cb-modal__log">
+                Đang chạy benchmark...
+            </div>
+            <div style="margin-top:16px; text-align:right;">
+                <button type="button" id="btnOkBenchmark" class="cb-btn cb-btn--steel">ĐÓNG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Move History PGN Timeline -->
+    <footer class="cb-footer">
+        <div class="cb-footer-label">
+            <i class="fa-solid fa-clock-rotate-left" style="color:var(--cb-gold);"></i> LỊCH SỬ NƯỚC ĐI (PGN):
+        </div>
+        <div id="moveHistoryPgnText" class="cb-footer-pgn">
+            Chưa có nước đi nào.
+        </div>
+    </footer>
+
+    <!-- Game Review Modal -->
+    <div id="gameReviewModal" class="cb-modal">
+        <div class="cb-modal__panel" style="max-width:700px; border-top-color:var(--cb-gold);">
+            <div class="cb-modal__head">
+                <h3 class="cb-modal__title"><i class="fa-solid fa-chart-line" style="color:var(--cb-gold);"></i> BÁO CÁO PHÂN TÍCH VÁN ĐẤU</h3>
+                <button type="button" id="btnCloseReviewModal" class="cb-modal__close">&times;</button>
+            </div>
+
+            <div id="reviewProgressContainer" style="display:none; margin-bottom:16px;">
+                <div style="font-size:0.82rem; color:#ffffff; margin-bottom:8px; display:flex; justify-content:space-between;">
+                    <span id="reviewProgressText">Đang phân tích: 0/0 nước đi...</span>
+                    <span><i class="fa-solid fa-brain fa-spin" style="color:var(--cb-gold);"></i> Engine Analyzing</span>
+                </div>
+                <div style="width:100%; height:8px; background:var(--cb-inset); border-radius:var(--cb-radius); overflow:hidden;">
+                    <div id="reviewProgressBar" style="width:0%; height:100%; background:var(--cb-gold); transition:width 0.2s;"></div>
+                </div>
+            </div>
+
+            <div id="reviewContentContainer" style="overflow-y:auto; flex:1; display:none;">
+                <!-- Accuracy Header -->
+                <div style="display:flex; gap:16px; margin-bottom:20px;">
+                    <div class="cb-acc-card">
+                        <div style="font-size:0.82rem; color:var(--cb-text-muted); margin-bottom:4px; font-weight:700;">ĐỘ CHÍNH XÁC (TRẮNG)</div>
+                        <div id="reviewAccWhite" style="font-size:1.8rem; font-weight:900; color:#ffffff; text-shadow:-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;">0%</div>
+                    </div>
+                    <div class="cb-acc-card">
+                        <div style="font-size:0.82rem; color:var(--cb-text-muted); margin-bottom:4px; font-weight:700;">ĐỘ CHÍNH XÁC (ĐEN)</div>
+                        <div id="reviewAccBlack" style="font-size:1.8rem; font-weight:900; color:#1a1a1c; background:#e8e8ea; display:inline-block; padding:2px 14px; border-radius:var(--cb-radius);">0%</div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+                    <div id="reviewStatsWhite" class="cb-panel" style="font-size:0.82rem; color:#ffffff;"></div>
+                    <div id="reviewStatsBlack" class="cb-panel" style="font-size:0.82rem; color:#ffffff;"></div>
+                </div>
+
+                <!-- Summary Commentary -->
+                <div class="cb-panel--gold" style="display:block;">
+                    <div style="font-weight:800; color:#ffffff; margin-bottom:8px;"><i class="fa-solid fa-robot" style="color:var(--cb-accent);"></i> ĐÁNH GIÁ CHUNG TỪ AI:</div>
+                    <div id="reviewSummaryText" style="color:#ffffff; font-size:0.88rem; line-height:1.6;">Đang chờ dữ liệu...</div>
+                </div>
+            </div>
+
+            <div id="reviewActionContainer" style="margin-top:20px; text-align:center;">
+                <button type="button" id="btnStartReview" class="cb-btn cb-btn--primary" style="font-size:0.95rem; padding:10px 22px;">
+                    <i class="fa-solid fa-bolt"></i> BẮT ĐẦU PHÂN TÍCH
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Archive Modal -->
+    <div id="gameArchiveModal" class="cb-modal">
+        <div class="cb-modal__panel" style="max-width:650px;">
+            <div class="cb-modal__head">
+                <h3 class="cb-modal__title"><i class="fa-solid fa-box-archive" style="color:var(--cb-accent);"></i> KHO LƯU TRỮ VÁN ĐẤU</h3>
+                <button type="button" id="btnCloseArchiveModal" class="cb-modal__close">&times;</button>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                <button type="button" id="btnSaveCurrentGame" class="cb-btn cb-btn--primary" style="font-size:0.85rem;">
+                    <i class="fa-solid fa-floppy-disk"></i> LƯU VÁN HIỆN TẠI
+                </button>
+                <button type="button" id="btnClearArchive" class="cb-btn cb-btn--ghost" style="font-size:0.85rem;">
+                    <i class="fa-solid fa-trash-can" style="color:var(--cb-rose);"></i> XOÁ TẤT CẢ
+                </button>
+            </div>
+
+            <div id="archiveListContainer" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px;">
+                <!-- Archive items injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkmate Overlay -->
+    <div id="checkmateOverlay" class="checkmate-overlay">
+        <div id="checkmateText" class="checkmate-text">Chiếu bí</div>
+        <div id="checkmateSubtext" class="checkmate-subtext"></div>
+        <button id="btnCloseCheckmate" class="btn-close-overlay" onclick="document.getElementById('checkmateOverlay').classList.remove('active')">Đóng</button>
+    </div>
+
+    <!-- Load Xiangqi Engine Core Scripts -->
+    <script src="js/xiangqi/coordinate-mapper.js"></script>
+    <script src="js/xiangqi/position-manager.js"></script>
+    <script src="js/xiangqi/move-generator.js"></script>
+    <script src="js/xiangqi/move-validator.js"></script>
+    <script src="js/xiangqi/move-converter.js"></script>
+    <script src="js/xiangqi/game-state.js"></script>
+    <script src="js/xiangqi/board-renderer.js"></script>
+    <script src="js/xiangqi/engine-adapter.js"></script>
+    <script src="js/xiangqi/engine-manager.js"></script>
+    <script src="js/xiangqi/analysis-manager.js"></script>
+    <script src="js/xiangqi/adaptive-time-manager.js"></script>
+    <script src="js/xiangqi/opening-diversity-manager.js"></script>
+    <script src="js/xiangqi/tactical-detector.js"></script>
+    <script src="js/xiangqi/playstyle-layer.js"></script>
+    <script src="js/xiangqi/ai-explanation.js"></script>
+    <script src="js/xiangqi/telemetry.js"></script>
+    <script src="js/xiangqi/xiangqi-presets.js"></script>
+    <script src="js/xiangqi/audio-fx.js"></script>
+    <script src="js/xiangqi/opening-book.js"></script>
+    <script src="js/xiangqi/ui-controller.js?v=4.0"></script>
+
+    <!-- JS Application Execution + Settings/Collapsible Handlers -->
+    <script type="module">
+        import { UIController } from './js/chess-battle/ui-controller.js?v=4.0';
+
+        let activeGame = 'chess'; // 'chess' or 'xiangqi'
+
+        async function boot() {
+            try {
+                if (window.chessApp) return;
+                const app = new UIController();
+                window.chessApp = app;
+                await app.init();
+            } catch (err) {
+                console.error('Chess App Init Error:', err);
+            }
+        }
+
+        boot();
+        if (document.readyState !== 'complete') {
+            window.addEventListener('load', boot);
+        }
+
+        // --- Unified Game Switcher (CỜ VUA <-> CỜ TƯỚNG) ---
+        const tabChess = document.getElementById('tabSwitchChess');
+        const tabXiangqi = document.getElementById('tabSwitchXiangqi');
+        const chessWrapper = document.getElementById('chessBoardWrapper');
+        const xiangqiWrapper = document.getElementById('xiangqiBoardWrapper');
+        const brandIcon = document.querySelector('.cb-brand i');
+        const brandText = document.querySelector('.cb-brand span');
+        const lblSideChoice = document.getElementById('lblSideChoice');
+        const lblBtnBotWhite = document.getElementById('lblBtnBotWhite');
+        const lblBtnBotBlack = document.getElementById('lblBtnBotBlack');
+        const inputOpponent = document.getElementById('inputOpponentSan');
+        const btnBotWhite = document.getElementById('btnBotWhite');
+        const btnBotBlack = document.getElementById('btnBotBlack');
+
+        const btnRewind = document.getElementById('btnRewindStart');
+        const btnUndo = document.getElementById('btnUndoMove');
+        const btnRedo = document.getElementById('btnRedoMove');
+        const btnReset = document.getElementById('btnResetBoard');
+        const btnForce = document.getElementById('btnForceAnalyze');
+        const btnArchive = document.getElementById('btnGameArchive');
+        const btnReview = document.getElementById('btnGameReview');
+        const selectPreset = document.getElementById('selectPresetMode');
+        const selectStyle = document.getElementById('selectPlayStyle');
+        const selectMode = document.getElementById('selectAppMode');
+
+        const badgeLocal = document.getElementById('healthLocalEngine');
+        const badgeDb = document.getElementById('healthOpeningDb');
+        const engineSourceBadge = document.getElementById('engineSourceBadge');
+
+        function switchGameMode(mode) {
+            activeGame = mode;
+            if (mode === 'xiangqi') {
+                tabXiangqi.style.background = 'var(--cb-gold)';
+                tabXiangqi.style.color = '#0a0a0b';
+                tabChess.style.background = 'transparent';
+                tabChess.style.color = 'var(--cb-text-muted)';
+
+                chessWrapper.style.display = 'none';
+                xiangqiWrapper.style.display = 'block';
+
+                if (brandIcon) brandIcon.className = 'fa-solid fa-yin-yang';
+                if (brandText) brandText.textContent = 'XIANGQI BATTLE';
+                if (lblBtnBotWhite) lblBtnBotWhite.textContent = 'BOT CẦM ĐỎ';
+                if (lblBtnBotBlack) lblBtnBotBlack.textContent = 'BOT CẦM ĐEN';
+                if (inputOpponent) inputOpponent.placeholder = 'Nhập nước đi rồi nhấn Enter (vd: h2e2, b2e2, P2-5...)';
+                if (badgeLocal) badgeLocal.innerHTML = '<span class="status-indicator-dot"></span> Fairy-Stockfish';
+                if (badgeDb) badgeDb.innerHTML = '<span class="status-indicator-dot"></span> Xiangqi DB';
+                if (engineSourceBadge) engineSourceBadge.textContent = 'Fairy-Stockfish Xiangqi (WASM + NNUE)';
+
+                // Hide Chess-specific health badges
+                const badgeCloud = document.getElementById('healthCloudEngine');
+                const badgeSyzygy = document.getElementById('healthTablebase');
+                if (badgeCloud) badgeCloud.style.display = 'none';
+                if (badgeSyzygy) badgeSyzygy.style.display = 'none';
+
+                // Settings modal theme section
+                const chessSettings = document.getElementById('chessThemeSettings');
+                const xiangqiSettings = document.getElementById('xiangqiThemeSettings');
+                if (chessSettings) chessSettings.style.display = 'none';
+                if (xiangqiSettings) xiangqiSettings.style.display = 'block';
+
+                const aiExplanation = document.getElementById('aiExplanationTextContent');
+                if (aiExplanation && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) {
+                    aiExplanation.innerHTML = 'Vui lòng chọn <span style="color:var(--cb-rose); font-weight:800;">BOT CẦM ĐỎ</span> hoặc <span style="color:var(--cb-gold); font-weight:800;">BOT CẦM ĐEN</span> để bắt đầu ván đấu.';
+                }
+                const topMoves = document.getElementById('topMovesListContainer');
+                if (topMoves && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) topMoves.innerHTML = '';
+                const bestLine = document.getElementById('bestLineText');
+                if (bestLine && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) bestLine.textContent = '-';
+                const spotlightMove = document.getElementById('recommendedBestMoveText');
+                if (spotlightMove && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) spotlightMove.textContent = '-';
+                const spotlightTitle = document.getElementById('lblSpotlightTitle');
+                if (spotlightTitle && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) spotlightTitle.textContent = 'HÃY CHỌN BÊN CHO BOT';
+                const evalStatus = document.getElementById('evalStatusText');
+                if (evalStatus && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) evalStatus.textContent = 'Chưa chọn bên cho Bot';
+                const engineStateTitle = document.getElementById('engineStateTitle');
+                if (engineStateTitle && (!window.xiangqiApp || !window.xiangqiApp.gameState || !window.xiangqiApp.gameState.botColor)) engineStateTitle.textContent = 'CHƯA CHỌN BÊN CHO BOT';
+
+                const btnBotW = document.getElementById('btnBotWhite');
+                const btnBotB = document.getElementById('btnBotBlack');
+                if (btnBotW && btnBotB) {
+                    if (window.xiangqiApp && window.xiangqiApp.gameState && window.xiangqiApp.gameState.botColor) {
+                        if (window.xiangqiApp.gameState.botColor === 'r') {
+                            btnBotW.classList.add('active');
+                            btnBotB.classList.remove('active');
+                        } else {
+                            btnBotB.classList.add('active');
+                            btnBotW.classList.remove('active');
+                        }
+                    } else {
+                        btnBotW.classList.remove('active');
+                        btnBotB.classList.remove('active');
+                    }
+                }
+
+                if (window.chessApp) window.chessApp.pause();
+                if (!window.xiangqiApp && window.UIControllerModule && window.UIControllerModule.XiangqiUIController) {
+                    window.xiangqiApp = new window.UIControllerModule.XiangqiUIController();
+                }
+                if (window.xiangqiApp) {
+                    window.xiangqiApp.resume();
+                }
+            } else {
+                tabChess.style.background = 'var(--cb-gold)';
+                tabChess.style.color = '#0a0a0b';
+                tabXiangqi.style.background = 'transparent';
+                tabXiangqi.style.color = 'var(--cb-text-muted)';
+
+                xiangqiWrapper.style.display = 'none';
+                chessWrapper.style.display = 'block';
+
+                if (brandIcon) brandIcon.className = 'fa-solid fa-chess-knight';
+                if (brandText) brandText.textContent = 'CHESS BATTLE';
+                if (lblBtnBotWhite) lblBtnBotWhite.textContent = 'BOT CẦM TRẮNG';
+                if (lblBtnBotBlack) lblBtnBotBlack.textContent = 'BOT CẦM ĐEN';
+                if (inputOpponent) inputOpponent.placeholder = 'Nhập nước đi rồi nhấn Enter (vd: e4, Nf3, e2e4...)';
+                if (badgeLocal) badgeLocal.innerHTML = '<span class="status-indicator-dot"></span> Stockfish 18';
+                if (badgeDb) badgeDb.innerHTML = '<span class="status-indicator-dot"></span> Lichess DB';
+                if (engineSourceBadge) engineSourceBadge.textContent = 'Stockfish 18 (WASM + NNUE)';
+
+                // Show Chess-specific health badges
+                const badgeCloud = document.getElementById('healthCloudEngine');
+                const badgeSyzygy = document.getElementById('healthTablebase');
+                if (badgeCloud) badgeCloud.style.display = 'inline-flex';
+                if (badgeSyzygy) badgeSyzygy.style.display = 'inline-flex';
+
+                // Settings modal theme section
+                const chessSettings = document.getElementById('chessThemeSettings');
+                const xiangqiSettings = document.getElementById('xiangqiThemeSettings');
+                if (chessSettings) chessSettings.style.display = 'block';
+                if (xiangqiSettings) xiangqiSettings.style.display = 'none';
+
+                const aiExplanation = document.getElementById('aiExplanationTextContent');
+                if (aiExplanation && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) {
+                    aiExplanation.innerHTML = 'Vui lòng chọn <i class="fa-solid fa-chess-king king-icon--w" style="font-size:14px;"></i> <b>BOT CẦM TRẮNG</b> hoặc <i class="fa-solid fa-chess-king king-icon--b" style="font-size:14px;"></i> <b>BOT CẦM ĐEN</b> để bắt đầu.';
+                }
+                const topMoves = document.getElementById('topMovesListContainer');
+                if (topMoves && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) topMoves.innerHTML = '';
+                const bestLine = document.getElementById('bestLineText');
+                if (bestLine && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) bestLine.textContent = '-';
+                const spotlightMove = document.getElementById('recommendedBestMoveText');
+                if (spotlightMove && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) spotlightMove.textContent = '-';
+                const spotlightTitle = document.getElementById('lblSpotlightTitle');
+                if (spotlightTitle && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) spotlightTitle.textContent = 'HÃY CHỌN BÊN CHO BOT';
+                const evalStatus = document.getElementById('evalStatusText');
+                if (evalStatus && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) evalStatus.textContent = 'Chưa chọn bên cho Bot';
+                const engineStateTitle = document.getElementById('engineStateTitle');
+                if (engineStateTitle && (!window.chessApp || !window.chessApp.chessState || !window.chessApp.chessState.botColor)) engineStateTitle.textContent = 'CHƯA CHỌN BÊN CHO BOT';
+
+                const btnBotWChess = document.getElementById('btnBotWhite');
+                const btnBotBChess = document.getElementById('btnBotBlack');
+                if (btnBotWChess && btnBotBChess) {
+                    if (window.chessApp && window.chessApp.chessState && window.chessApp.chessState.botColor) {
+                        if (window.chessApp.chessState.botColor === 'w') {
+                            btnBotWChess.classList.add('active');
+                            btnBotBChess.classList.remove('active');
+                        } else {
+                            btnBotBChess.classList.add('active');
+                            btnBotWChess.classList.remove('active');
+                        }
+                    } else {
+                        btnBotWChess.classList.remove('active');
+                        btnBotBChess.classList.remove('active');
+                    }
+                }
+
+                if (window.xiangqiApp) window.xiangqiApp.pause();
+                if (window.chessApp) window.chessApp.resume();
+            }
+        }
+
+        window.switchGameMode = switchGameMode;
+        tabChess?.addEventListener('click', (e) => { e.preventDefault(); switchGameMode('chess'); });
+        tabXiangqi?.addEventListener('click', (e) => { e.preventDefault(); switchGameMode('xiangqi'); });
+
+        // Check URL parameter (e.g. ?game=xiangqi)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('game') === 'xiangqi') {
+            switchGameMode('xiangqi');
+        } else {
+            switchGameMode('chess');
+        }
+
+        document.getElementById('btnGameArchive')?.addEventListener('click', (e) => {
+            if (activeGame === 'xiangqi' && window.xiangqiApp) {
+                e.stopPropagation();
+                window.xiangqiApp.openGameArchiveModal();
+            }
+        });
+
+        document.getElementById('btnGameReview')?.addEventListener('click', () => {
+            if (activeGame === 'xiangqi' && window.xiangqiApp) {
+                window.xiangqiApp.openGameReviewModal();
+            }
+        });
+
+        // --- Settings Modal ---
+        const settingsModal = document.getElementById('settingsModal');
+        const btnOpenSettings = document.getElementById('btnOpenSettings');
+        const btnCloseSettings = document.getElementById('btnCloseSettings');
+        const btnOkSettings = document.getElementById('btnOkSettings');
+        function openSettings() { settingsModal.classList.add('active'); }
+        function closeSettings() { settingsModal.classList.remove('active'); }
+        if (btnOpenSettings) btnOpenSettings.addEventListener('click', openSettings);
+        if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettings);
+        if (btnOkSettings) btnOkSettings.addEventListener('click', closeSettings);
+        settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
+
+        // Sync Coach Preset: settings -> main (keep main for JS compat)
+        const coachMain = document.getElementById('selectCoachPreset');
+        const coachSet = document.getElementById('selectCoachPresetSettings');
+        if (coachSet && coachMain) {
+            coachSet.addEventListener('change', () => { coachMain.value = coachSet.value; coachMain.dispatchEvent(new Event('change')); });
+            coachMain.addEventListener('change', () => { coachSet.value = coachMain.value; });
+        }
+
+        // Debug Toggle from Settings
+        const btnToggleDebug = document.getElementById('btnToggleDebugFromSettings');
+        const debugPanel = document.getElementById('engineDebugPanel');
+        const btnToggleDebugHidden = document.getElementById('btnToggleDebugPanel');
+        if (btnToggleDebug) {
+            btnToggleDebug.addEventListener('click', () => {
+                if (btnToggleDebugHidden) btnToggleDebugHidden.click();
+                else debugPanel.classList.toggle('active');
+            });
+        }
+
+        // Threads / Hash (optional: forward to engine if JS exposes API)
+        document.getElementById('selectEngineThreads')?.addEventListener('change', (e) => {
+            window.dispatchEvent(new CustomEvent('engine-config', { detail: { threads: parseInt(e.target.value) } }));
+        });
+        document.getElementById('selectEngineHash')?.addEventListener('change', (e) => {
+            window.dispatchEvent(new CustomEvent('engine-config', { detail: { hash: parseInt(e.target.value) } }));
+        });
+
+        // --- Collapsible Tips ---
+        const toggleTips = document.getElementById('toggleTips');
+        const tipsContent = document.getElementById('tipsContent');
+        const chkCollapseTips = document.getElementById('chkCollapseTips');
+        function setTipsCollapsed(collapsed) {
+            toggleTips?.classList.toggle('collapsed', collapsed);
+            tipsContent?.classList.toggle('collapsed', collapsed);
+        }
+        if (toggleTips && tipsContent) {
+            toggleTips.addEventListener('click', () => setTipsCollapsed(!tipsContent.classList.contains('collapsed')));
+        }
+        if (chkCollapseTips) {
+            chkCollapseTips.addEventListener('change', (e) => setTipsCollapsed(e.target.checked));
+        }
+
+        // Escape key closes all modals
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.cb-modal.active').forEach(m => m.classList.remove('active'));
+            }
+        });
+    </script>
+</body>
+</html>
