@@ -258,6 +258,43 @@
       if (this.btnReset) this.btnReset.addEventListener('click', () => { if (this.active) this.handleReset(); });
       if (this.btnFlip) this.btnFlip.addEventListener('click', () => { if (this.active) this.toggleFlipBoard(); });
 
+      this.btnAnalyze = document.getElementById('btnForceAnalyze');
+      if (this.btnAnalyze) {
+        this.btnAnalyze.addEventListener('click', () => {
+          if (!this.active) return;
+          if (this.isAnalyzing) {
+            this.cancelAnalysis();
+            this.updateTelemetryStatus('IDLE');
+          } else {
+            this.triggerAnalysis(true);
+          }
+        });
+      }
+
+      this.btnGameReview = document.getElementById('btnGameReview');
+      if (this.btnGameReview) {
+        this.btnGameReview.addEventListener('click', () => {
+          if (!this.active) return;
+          this.openGameReviewModal();
+        });
+      }
+
+      this.btnCloseSideReview = document.getElementById('btnCloseSideReview');
+      if (this.btnCloseSideReview) {
+        this.btnCloseSideReview.addEventListener('click', () => {
+          if (!this.active) return;
+          this.closeSideReview();
+        });
+      }
+
+      this.btnStartSideReview = document.getElementById('btnStartSideReview');
+      if (this.btnStartSideReview) {
+        this.btnStartSideReview.addEventListener('click', () => {
+          if (!this.active) return;
+          this.runFullGameReview();
+        });
+      }
+
       document.addEventListener('keydown', (e) => {
         if (!this.active) return;
         const targetTag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : '';
@@ -1518,6 +1555,20 @@
         this.debugStatus.textContent = status;
         this.debugStatus.style.color = status === 'THINKING' ? '#f1c40f' : (status === 'IDLE' ? '#2ecc71' : '#e74c3c');
       }
+      const btnAnalyze = document.getElementById('btnForceAnalyze');
+      if (btnAnalyze) {
+        if (status === 'THINKING') {
+          btnAnalyze.classList.remove('btn-cb-action--primary');
+          btnAnalyze.classList.add('btn-cb-action--danger');
+          btnAnalyze.title = "Dừng phân tích";
+          btnAnalyze.innerHTML = '<i class="fa-solid fa-hand"></i> <span class="btn-text">Dừng</span>';
+        } else {
+          btnAnalyze.classList.remove('btn-cb-action--danger');
+          btnAnalyze.classList.add('btn-cb-action--primary');
+          btnAnalyze.title = "Phân tích thế cờ";
+          btnAnalyze.innerHTML = '<i class="fa-solid fa-bolt"></i> <span class="btn-text">Phân Tích</span>';
+        }
+      }
     }
 
     updateDebugPanel(result, playstyleDecision = {}) {
@@ -1599,9 +1650,39 @@
     handleReset() {
       if (!this.active) return;
       this.analysisManager.cancelAnalysis();
-      const currentBotColor = this.gameState.botColor || 'r';
-      const sideChoice = (this.appMode === 'PLAY_VS_BOT' && currentBotColor === 'b') ? 'r' : (this.appMode === 'PLAY_VS_BOT' ? 'b' : currentBotColor);
-      this.startGameWithBotSide(sideChoice);
+      this.gameState.reset();
+      this.gameState.botColor = null;
+      this.renderer.setOrientation('r');
+      this.clearSelection();
+
+      if (this.btnChooseBotRed) this.btnChooseBotRed.classList.remove('active');
+      if (this.btnChooseBotBlack) this.btnChooseBotBlack.classList.remove('active');
+
+      const spotlightMove = document.getElementById('recommendedBestMoveText');
+      if (spotlightMove) spotlightMove.textContent = '-';
+      const spotlightTitle = document.getElementById('lblSpotlightTitle');
+      if (spotlightTitle) spotlightTitle.textContent = 'HÃY CHỌN BÊN CHO BOT';
+      const evalStatus = document.getElementById('evalStatusText');
+      if (evalStatus) evalStatus.textContent = 'Chưa chọn bên cho Bot';
+      const engineStateTitle = document.getElementById('engineStateTitle');
+      if (engineStateTitle) engineStateTitle.textContent = 'CHƯA CHỌN BÊN CHO BOT';
+      const aiExplanation = document.getElementById('aiExplanationTextContent');
+      if (aiExplanation) {
+        aiExplanation.innerHTML = 'Vui lòng chọn <span style="color:var(--cb-rose); font-weight:800;">BOT CẦM ĐỎ</span> hoặc <span style="color:var(--cb-gold); font-weight:800;">BOT CẦM ĐEN</span> để bắt đầu ván đấu.';
+      }
+      const topMoves = document.getElementById('topMovesListContainer');
+      if (topMoves) topMoves.innerHTML = '';
+      const bestLine = document.getElementById('bestLineText');
+      if (bestLine) bestLine.textContent = '-';
+
+      const evalValText = document.getElementById('evalScoreValueText');
+      const evalBarFill = document.getElementById('evalBarFill');
+      if (evalValText) evalValText.textContent = '...';
+      if (evalBarFill) evalBarFill.style.height = '50%';
+
+      this.updateTelemetryStatus('IDLE');
+      this.renderer.render(this.gameState);
+      this.renderMoveList();
     }
 
     updateUiState() {
@@ -2149,25 +2230,58 @@
       } catch (e) {}
     }
 
-    async openGameReviewModal() {
+    openGameReviewModal() {
       if (!this.active) return;
-      const modal = document.getElementById('gameReviewModal');
-      const progressContainer = document.getElementById('reviewProgressContainer');
-      const progressBar = document.getElementById('reviewProgressBar');
-      const progressText = document.getElementById('reviewProgressText');
-      const contentContainer = document.getElementById('reviewContentContainer');
-      const accRed = document.getElementById('reviewAccWhite');
-      const accBlack = document.getElementById('reviewAccBlack');
-      const statsRed = document.getElementById('reviewStatsWhite');
-      const statsBlack = document.getElementById('reviewStatsBlack');
-      const summaryText = document.getElementById('reviewSummaryText');
-      const btnStart = document.getElementById('btnStartReview');
-      const closeBtn = document.getElementById('btnCloseReviewModal');
+      const sidePanel = document.getElementById('gameReviewSidePanel');
+      const engineBody = document.getElementById('engineAnalysisBody');
+      if (sidePanel) {
+        sidePanel.style.display = 'flex';
+        if (engineBody) engineBody.style.display = 'none';
 
-      if (!modal) return;
-      modal.classList.add('active');
-      if (closeBtn) closeBtn.onclick = () => modal.classList.remove('active');
+        const lblPlayer1 = document.getElementById('lblSideAccPlayer1');
+        const lblPlayer2 = document.getElementById('lblSideAccPlayer2');
+        if (lblPlayer1) lblPlayer1.textContent = 'QUÂN ĐỎ';
+        if (lblPlayer2) lblPlayer2.textContent = 'QUÂN ĐEN';
 
+        const progressContainer = document.getElementById('reviewSideProgressContainer');
+        const contentContainer = document.getElementById('reviewSideContentContainer');
+        const actionContainer = document.getElementById('reviewSideActionContainer');
+        if (progressContainer) progressContainer.style.display = 'none';
+        if (contentContainer) contentContainer.style.display = 'none';
+        if (actionContainer) actionContainer.style.display = 'block';
+
+        this.runFullGameReview();
+      } else {
+        const modal = document.getElementById('gameReviewModal');
+        if (modal) {
+          modal.classList.add('active');
+          const closeBtn = document.getElementById('btnCloseReviewModal');
+          if (closeBtn) closeBtn.onclick = () => modal.classList.remove('active');
+          this.runFullGameReview();
+        }
+      }
+    }
+
+    closeSideReview() {
+      const sidePanel = document.getElementById('gameReviewSidePanel');
+      const engineBody = document.getElementById('engineAnalysisBody');
+      if (sidePanel) sidePanel.style.display = 'none';
+      if (engineBody) engineBody.style.display = 'flex';
+    }
+
+    async runFullGameReview() {
+      const progressContainer = document.getElementById('reviewSideProgressContainer') || document.getElementById('reviewProgressContainer');
+      const progressBar = document.getElementById('reviewSideProgressBar') || document.getElementById('reviewProgressBar');
+      const progressText = document.getElementById('reviewSideProgressText') || document.getElementById('reviewProgressText');
+      const contentContainer = document.getElementById('reviewSideContentContainer') || document.getElementById('reviewContentContainer');
+      const actionContainer = document.getElementById('reviewSideActionContainer') || document.getElementById('reviewActionContainer');
+      const accRed = document.getElementById('reviewSideAccWhite') || document.getElementById('reviewAccWhite');
+      const accBlack = document.getElementById('reviewSideAccBlack') || document.getElementById('reviewAccBlack');
+      const statsRed = document.getElementById('reviewSideStatsWhite') || document.getElementById('reviewStatsWhite');
+      const statsBlack = document.getElementById('reviewSideStatsBlack') || document.getElementById('reviewStatsBlack');
+      const summaryText = document.getElementById('reviewSideSummaryText') || document.getElementById('reviewSummaryText');
+
+      if (actionContainer) actionContainer.style.display = 'none';
       if (progressContainer) progressContainer.style.display = 'block';
       if (contentContainer) contentContainer.style.display = 'none';
 
@@ -2214,7 +2328,7 @@
         if (p >= 100) {
           clearInterval(interval);
           if (progressContainer) progressContainer.style.display = 'none';
-          if (contentContainer) contentContainer.style.display = 'block';
+          if (contentContainer) contentContainer.style.display = 'flex';
 
           const redAcc = Math.min(98, Math.max(72, Math.round(92 - (redStats.inaccuracy * 4 + redStats.mistake * 8 + redStats.blunder * 15))));
           const blackAcc = Math.min(98, Math.max(68, Math.round(89 - (blackStats.inaccuracy * 4 + blackStats.mistake * 8 + blackStats.blunder * 15))));
@@ -2222,24 +2336,23 @@
           if (accRed) accRed.textContent = `${redAcc}%`;
           if (accBlack) accBlack.textContent = `${blackAcc}%`;
 
-          const renderStatBox = (title, color, st) => `
-            <div style="font-weight:800; margin-bottom:8px; color:${color};"><i class="fa-solid fa-chess-knight"></i> THỐNG KÊ ${title}:</div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>⭐️ Nước tối ưu (Best):</span><b style="color:var(--cb-gold);">${st.best}</b></div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>✅ Nước tốt (Good):</span><b style="color:var(--cb-accent);">${st.good}</b></div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>⚠️ Thiếu chính xác:</span><b style="color:#fbbf24;">${st.inaccuracy}</b></div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>❌ Sai lầm (Mistake):</span><b style="color:#f97316;">${st.mistake}</b></div>
-            <div style="display:flex; justify-content:space-between;"><span>💥 Đại sai lầm (Blunder):</span><b style="color:var(--cb-rose);">${st.blunder}</b></div>
+          const renderStatBox = (st) => `
+            <div style="color:var(--cb-gold); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-star"></i> Tối ưu: ${st.best}</div>
+            <div style="color:var(--cb-emerald); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-thumbs-up"></i> Tốt: ${st.good}</div>
+            <div style="color:var(--cb-text-muted); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-question"></i> Chưa chuẩn: ${st.inaccuracy}</div>
+            <div style="color:var(--cb-rose); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-xmark"></i> Sai lầm: ${st.mistake}</div>
+            <div style="color:#ef4444; font-weight:900;"><i class="fa-solid fa-skull"></i> Đại sai lầm: ${st.blunder}</div>
           `;
 
-          if (statsRed) statsRed.innerHTML = renderStatBox('QUÂN ĐỎ', 'var(--cb-rose)', redStats);
-          if (statsBlack) statsBlack.innerHTML = renderStatBox('QUÂN ĐEN', 'var(--cb-gold)', blackStats);
+          if (statsRed) statsRed.innerHTML = renderStatBox(redStats);
+          if (statsBlack) statsBlack.innerHTML = renderStatBox(blackStats);
 
           if (summaryText) {
             const advSide = redAcc >= blackAcc ? 'Quân Đỏ' : 'Quân Đen';
             summaryText.innerHTML = `
-              Trận đấu diễn ra vô cùng kịch tính với thế trận công thủ chặt chẽ. 
-              <strong>${advSide}</strong> thể hiện sự ổn định và khai thác tốt các điểm yếu trên chiến tuyến, duy trì độ chính xác cao (${Math.max(redAcc, blackAcc)}%).
-              Chiến thuật triển khai Mã và Pháo giữ vững được quyền chủ động ở khu vực trung tâm bàn cờ.
+              Trận đấu diễn ra công thủ chặt chẽ. 
+              <strong>${advSide}</strong> thể hiện sự ổn định cao (${Math.max(redAcc, blackAcc)}%).
+              Chiến thuật triển khai Mã và Pháo giữ vững được quyền chủ động ở trung tâm bàn cờ.
             `;
           }
         }

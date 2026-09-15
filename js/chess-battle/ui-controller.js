@@ -476,8 +476,9 @@ export class UIController {
     const btnReset = document.getElementById('btnResetBoard');
     const btnFlip = document.getElementById('btnFlipBoard');
     const btnAnalyze = document.getElementById('btnForceAnalyze');
-    const btnStop = document.getElementById('btnStopAnalyze');
     const btnGameReview = document.getElementById('btnGameReview');
+    const btnCloseSideReview = document.getElementById('btnCloseSideReview');
+    const btnStartSideReview = document.getElementById('btnStartSideReview');
     const btnCloseReviewModal = document.getElementById('btnCloseReviewModal');
     const btnStartReview = document.getElementById('btnStartReview');
 
@@ -486,12 +487,24 @@ export class UIController {
     if (btnRedo) btnRedo.addEventListener('click', () => { if (!this.active) return; this.redoMove(); });
     if (btnReset) btnReset.addEventListener('click', () => { if (!this.active) return; this.resetBoard(); });
     if (btnFlip) btnFlip.addEventListener('click', () => { if (!this.active) return; this.toggleFlipBoard(); });
-    if (btnAnalyze) btnAnalyze.addEventListener('click', () => { if (!this.active) return; this.triggerAnalysis(); });
-    if (btnStop) btnStop.addEventListener('click', () => { if (!this.active) return; this.analysisManager.cancelCurrentAnalysis(); });
+    if (btnAnalyze) {
+      btnAnalyze.addEventListener('click', () => {
+        if (!this.active) return;
+        if (this.chessState.engineUiState === EngineUiState.ANALYZING || (this.analysisManager && this.analysisManager.isAnalyzing)) {
+          this.analysisManager.cancelCurrentAnalysis();
+          this.updateEngineUiState(EngineUiState.ENGINE_READY);
+        } else {
+          this.triggerAnalysis(true);
+        }
+      });
+    }
     
     if (btnGameReview) btnGameReview.addEventListener('click', () => { if (!this.active) return; this.openGameReviewModal(); });
+    if (btnCloseSideReview) btnCloseSideReview.addEventListener('click', () => { if (!this.active) return; this.closeSideReview(); });
+    if (btnStartSideReview) btnStartSideReview.addEventListener('click', () => { if (!this.active) return; this.runFullGameReview(); });
     if (btnCloseReviewModal) btnCloseReviewModal.addEventListener('click', () => {
-      document.getElementById('gameReviewModal').style.display = 'none';
+      const modal = document.getElementById('gameReviewModal');
+      if (modal) modal.style.display = 'none';
       this.reviewIsRunning = false;
     });
     if (btnStartReview) btnStartReview.addEventListener('click', () => { if (!this.active) return; this.runFullGameReview(); });
@@ -1061,6 +1074,21 @@ export class UIController {
     const stateTitle = document.getElementById('engineStateTitle');
     const summaryEl = document.getElementById('engineTelemetrySummary');
     const statusIndicator = document.getElementById('engineStatusIndicator');
+    const btnAnalyze = document.getElementById('btnForceAnalyze');
+
+    if (btnAnalyze) {
+      if (state === EngineUiState.ANALYZING) {
+        btnAnalyze.classList.remove('btn-cb-action--primary');
+        btnAnalyze.classList.add('btn-cb-action--danger');
+        btnAnalyze.title = "Dừng phân tích";
+        btnAnalyze.innerHTML = '<i class="fa-solid fa-hand"></i> <span class="btn-text">Dừng</span>';
+      } else {
+        btnAnalyze.classList.remove('btn-cb-action--danger');
+        btnAnalyze.classList.add('btn-cb-action--primary');
+        btnAnalyze.title = "Phân tích thế cờ";
+        btnAnalyze.innerHTML = '<i class="fa-solid fa-bolt"></i> <span class="btn-text">Phân Tích</span>';
+      }
+    }
 
     if (stateTitle) stateTitle.style.color = '#ffffff';
 
@@ -1281,7 +1309,7 @@ export class UIController {
 
   resetBoard() {
     if (!this.active) return;
-    this.setBotColor(this.chessState.botColor || 'w');
+    this.setInitialIdleState();
   }
 
 
@@ -1344,27 +1372,69 @@ export class UIController {
 
   openGameReviewModal() {
     if (!this.active) return;
-    const modal = document.getElementById('gameReviewModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      document.getElementById('reviewProgressContainer').style.display = 'none';
-      document.getElementById('reviewContentContainer').style.display = 'none';
-      document.getElementById('reviewActionContainer').style.display = 'block';
+    const sidePanel = document.getElementById('gameReviewSidePanel');
+    const engineBody = document.getElementById('engineAnalysisBody');
+    if (sidePanel) {
+      sidePanel.style.display = 'flex';
+      if (engineBody) engineBody.style.display = 'none';
+
+      const lblPlayer1 = document.getElementById('lblSideAccPlayer1');
+      const lblPlayer2 = document.getElementById('lblSideAccPlayer2');
+      if (lblPlayer1) lblPlayer1.textContent = 'TRẮNG';
+      if (lblPlayer2) lblPlayer2.textContent = 'ĐEN';
+
+      const progressContainer = document.getElementById('reviewSideProgressContainer');
+      const contentContainer = document.getElementById('reviewSideContentContainer');
+      const actionContainer = document.getElementById('reviewSideActionContainer');
+      if (progressContainer) progressContainer.style.display = 'none';
+      if (contentContainer) contentContainer.style.display = 'none';
+      if (actionContainer) actionContainer.style.display = 'block';
+
+      // Auto start if history exists
+      if (this.game && this.game.historyList && this.game.historyList.length > 0) {
+        this.runFullGameReview();
+      }
+    } else {
+      const modal = document.getElementById('gameReviewModal');
+      if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('reviewProgressContainer').style.display = 'none';
+        document.getElementById('reviewContentContainer').style.display = 'none';
+        document.getElementById('reviewActionContainer').style.display = 'block';
+      }
     }
+  }
+
+  closeSideReview() {
+    this.reviewIsRunning = false;
+    const sidePanel = document.getElementById('gameReviewSidePanel');
+    const engineBody = document.getElementById('engineAnalysisBody');
+    if (sidePanel) sidePanel.style.display = 'none';
+    if (engineBody) engineBody.style.display = 'flex';
   }
 
   async runFullGameReview() {
     this.reviewIsRunning = true;
     const historyList = this.game.historyList || [];
     if (historyList.length === 0) {
-      alert("Chưa có nước đi nào để phân tích!");
+      const summaryText = document.getElementById('reviewSideSummaryText') || document.getElementById('reviewSummaryText');
+      if (summaryText) summaryText.textContent = "Chưa có nước đi nào trong ván đấu để phân tích!";
+      const contentContainer = document.getElementById('reviewSideContentContainer');
+      const actionContainer = document.getElementById('reviewSideActionContainer');
+      if (actionContainer) actionContainer.style.display = 'none';
+      if (contentContainer) contentContainer.style.display = 'flex';
       return;
     }
 
-    document.getElementById('reviewActionContainer').style.display = 'none';
-    document.getElementById('reviewProgressContainer').style.display = 'block';
-    const progressText = document.getElementById('reviewProgressText');
-    const progressBar = document.getElementById('reviewProgressBar');
+    const actionContainer = document.getElementById('reviewSideActionContainer') || document.getElementById('reviewActionContainer');
+    const progressContainer = document.getElementById('reviewSideProgressContainer') || document.getElementById('reviewProgressContainer');
+    const progressText = document.getElementById('reviewSideProgressText') || document.getElementById('reviewProgressText');
+    const progressBar = document.getElementById('reviewSideProgressBar') || document.getElementById('reviewProgressBar');
+    const contentContainer = document.getElementById('reviewSideContentContainer') || document.getElementById('reviewContentContainer');
+
+    if (actionContainer) actionContainer.style.display = 'none';
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (contentContainer) contentContainer.style.display = 'none';
 
     // Create a temporary game to walk through the history
     const tempGame = new Chess(this.game.startFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
@@ -1387,8 +1457,8 @@ export class UIController {
       const move = historyList[i];
       tempGame.move(move);
       
-      progressText.textContent = `Đang phân tích: ${i + 1}/${historyList.length} nước đi...`;
-      progressBar.style.width = `${((i + 1) / historyList.length) * 100}%`;
+      if (progressText) progressText.textContent = `Đang phân tích: ${i + 1}/${historyList.length} nước đi...`;
+      if (progressBar) progressBar.style.width = `${((i + 1) / historyList.length) * 100}%`;
 
       result = await this.analysisManager.analyzePosition(tempGame);
       evals.push(result.evalScore ? result.evalScore : { type: 'cp', value: 0 });
@@ -1399,9 +1469,6 @@ export class UIController {
     if (!this.reviewIsRunning) return;
 
     // 1. Normalize all position evaluations to White's POV (White advantageous > 0, Black advantageous < 0)
-    // Since UCI Stockfish reports score from the perspective of the side to move:
-    // - Even indices (0, 2, 4...) are White's turn -> score is already White's POV
-    // - Odd indices (1, 3, 5...) are Black's turn -> score is Black's POV, so White's POV = -score
     const whiteScores = evals.map((e, idx) => {
       let val = 0;
       if (e.type === 'mate') {
@@ -1459,43 +1526,44 @@ export class UIController {
     const finalAccW = whiteMoves > 0 ? (whiteAccSum / whiteMoves).toFixed(1) : '100.0';
     const finalAccB = blackMoves > 0 ? (blackAccSum / blackMoves).toFixed(1) : '100.0';
 
-    document.getElementById('reviewProgressContainer').style.display = 'none';
-    document.getElementById('reviewContentContainer').style.display = 'block';
+    if (progressContainer) progressContainer.style.display = 'none';
+    if (contentContainer) contentContainer.style.display = 'flex';
 
-    document.getElementById('reviewAccWhite').textContent = `${finalAccW}%`;
-    document.getElementById('reviewAccBlack').textContent = `${finalAccB}%`;
+    const accWhiteEl = document.getElementById('reviewSideAccWhite') || document.getElementById('reviewAccWhite');
+    const accBlackEl = document.getElementById('reviewSideAccBlack') || document.getElementById('reviewAccBlack');
+    if (accWhiteEl) accWhiteEl.textContent = `${finalAccW}%`;
+    if (accBlackEl) accBlackEl.textContent = `${finalAccB}%`;
 
-    document.getElementById('reviewStatsWhite').innerHTML = `
-      <div style="color:var(--cb-gold); font-weight:700;"><i class="fa-solid fa-star"></i> Nước tối ưu (Best): ${statsW.best}</div>
-      <div style="color:var(--cb-emerald); font-weight:700;"><i class="fa-solid fa-thumbs-up"></i> Nước tốt (Good): ${statsW.good}</div>
-      <div style="color:var(--cb-text-muted); font-weight:700;"><i class="fa-solid fa-question"></i> Không chính xác (Inaccuracy): ${statsW.inaccuracy}</div>
-      <div style="color:var(--cb-rose); font-weight:700;"><i class="fa-solid fa-xmark"></i> Sai lầm (Mistake): ${statsW.mistake}</div>
-      <div style="color:#ef4444; font-weight:900;"><i class="fa-solid fa-skull"></i> Nước đi tệ hại (Blunder): ${statsW.blunder}</div>
+    const statsWhiteEl = document.getElementById('reviewSideStatsWhite') || document.getElementById('reviewStatsWhite');
+    const statsBlackEl = document.getElementById('reviewSideStatsBlack') || document.getElementById('reviewStatsBlack');
+
+    const renderStatHtml = (st) => `
+      <div style="color:var(--cb-gold); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-star"></i> Tối ưu: ${st.best}</div>
+      <div style="color:var(--cb-emerald); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-thumbs-up"></i> Tốt: ${st.good}</div>
+      <div style="color:var(--cb-text-muted); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-question"></i> Chưa chuẩn: ${st.inaccuracy}</div>
+      <div style="color:var(--cb-rose); font-weight:700; margin-bottom:2px;"><i class="fa-solid fa-xmark"></i> Sai lầm: ${st.mistake}</div>
+      <div style="color:#ef4444; font-weight:900;"><i class="fa-solid fa-skull"></i> Đại sai lầm: ${st.blunder}</div>
     `;
 
-    document.getElementById('reviewStatsBlack').innerHTML = `
-      <div style="color:var(--cb-gold); font-weight:700;"><i class="fa-solid fa-star"></i> Nước tối ưu (Best): ${statsB.best}</div>
-      <div style="color:var(--cb-emerald); font-weight:700;"><i class="fa-solid fa-thumbs-up"></i> Nước tốt (Good): ${statsB.good}</div>
-      <div style="color:var(--cb-text-muted); font-weight:700;"><i class="fa-solid fa-question"></i> Không chính xác (Inaccuracy): ${statsB.inaccuracy}</div>
-      <div style="color:var(--cb-rose); font-weight:700;"><i class="fa-solid fa-xmark"></i> Sai lầm (Mistake): ${statsB.mistake}</div>
-      <div style="color:#ef4444; font-weight:900;"><i class="fa-solid fa-skull"></i> Nước đi tệ hại (Blunder): ${statsB.blunder}</div>
-    `;
+    if (statsWhiteEl) statsWhiteEl.innerHTML = renderStatHtml(statsW);
+    if (statsBlackEl) statsBlackEl.innerHTML = renderStatHtml(statsB);
 
-    let summary = `Ván đấu kéo dài ${Math.ceil(historyList.length / 2)} nước. `;
+    let summary = `Ván đấu ${Math.ceil(historyList.length / 2)} nước. `;
     if (parseFloat(finalAccW) > parseFloat(finalAccB) + 8) summary += 'Trắng áp đảo với độ chính xác vượt trội. ';
-    else if (parseFloat(finalAccB) > parseFloat(finalAccW) + 8) summary += 'Đen thi đấu xuất sắc và chiếm thế thượng phong. ';
+    else if (parseFloat(finalAccB) > parseFloat(finalAccW) + 8) summary += 'Đen thi đấu xuất sắc và chiếm ưu thế. ';
     else summary += 'Một ván đấu đôi công giằng co cân bằng. ';
     
     if (statsW.blunder > 0 || statsB.blunder > 0) {
-      summary += `Ván đấu có tổng cộng ${statsW.blunder + statsB.blunder} nước sai lầm nghiêm trọng (Blunder). `;
+      summary += `Tổng cộng có ${statsW.blunder + statsB.blunder} nước sai lầm nghiêm trọng (Blunder). `;
     }
     if (parseFloat(finalAccW) >= 90 && parseFloat(finalAccB) >= 90) {
       summary += 'Cả hai kỳ thủ đều đạt độ chính xác tương đương Đại Kiện Tướng!';
     } else if (parseFloat(finalAccW) < 60 || parseFloat(finalAccB) < 60) {
-      summary += 'Còn nhiều nước đi cần tối ưu, hãy luyện tập thêm các bài tập khai - trung cuộc nhé!';
+      summary += 'Còn nhiều nước đi cần cải thiện ở trung cuộc!';
     }
 
-    document.getElementById('reviewSummaryText').textContent = summary;
+    const summaryEl = document.getElementById('reviewSideSummaryText') || document.getElementById('reviewSummaryText');
+    if (summaryEl) summaryEl.textContent = summary;
   }
 
   categorizeMove(cpLoss, stats) {

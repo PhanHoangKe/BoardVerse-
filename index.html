@@ -330,176 +330,239 @@
             </div>
 
 
-            <!-- Board Action Bar: Điều hướng | Thu phóng | Reset | Phân tích | Báo cáo -->
+            <!-- Board Action Bar: Điều hướng (Trái) | Hành động (Giữa) | Thu phóng (Phải) -->
             <div class="cb-action-bar">
-                <button type="button" id="btnRewindStart" class="btn-cb-action" title="Về vị trí bắt đầu">
-                    <i class="fa-solid fa-backward-fast"></i>
-                </button>
-                <button type="button" id="btnUndoMove" class="btn-cb-action" title="Lùi 1 nước">
-                    <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <button type="button" id="btnRedoMove" class="btn-cb-action" title="Tiến 1 nước">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </button>
-                <button type="button" id="btnFlipBoard" class="btn-cb-action" title="Xoay bàn cờ">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
-                <span class="cb-action-sep"></span>
-                <button type="button" id="btnZoomOut" class="btn-cb-action" title="Thu nhỏ bàn cờ (-10%)">
-                    <i class="fa-solid fa-magnifying-glass-minus"></i>
-                </button>
-                <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ bàn cờ">100%</span>
-                <button type="button" id="btnZoomIn" class="btn-cb-action" title="Phóng to bàn cờ (+10%)">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i>
-                </button>
-                <button type="button" id="btnZoomReset" class="btn-cb-action" title="Đặt lại kích thước chuẩn 100%">
-                    <i class="fa-solid fa-arrow-rotate-right"></i>
-                </button>
-                <span class="cb-action-sep"></span>
-                <button type="button" id="btnResetBoard" class="btn-cb-action btn-cb-action--danger" title="Đặt lại bàn cờ mới">
-                    <i class="fa-solid fa-rotate-left"></i> <span class="btn-text">Reset</span>
-                </button>
-                <span class="cb-action-sep"></span>
-                <button type="button" id="btnForceAnalyze" class="btn-cb-action btn-cb-action--primary" title="Phân tích thế cờ">
-                    <i class="fa-solid fa-bolt"></i> <span class="btn-text">Phân Tích</span>
-                </button>
-                <button type="button" id="btnStopAnalyze" class="btn-cb-action btn-cb-action--danger" title="Dừng phân tích">
-                    <i class="fa-solid fa-hand"></i> <span class="btn-text">Stop</span>
-                </button>
-                <span class="cb-action-sep"></span>
-                <button type="button" id="btnGameReview" class="btn-cb-action btn-cb-action--gold" title="Tổng kết ván đấu">
-                    <i class="fa-solid fa-chart-simple"></i> <span class="btn-text">Báo Cáo</span>
-                </button>
+                <div class="cb-action-group">
+                    <button type="button" id="btnRewindStart" class="btn-cb-action" title="Về vị trí bắt đầu">
+                        <i class="fa-solid fa-backward-fast"></i>
+                    </button>
+                    <button type="button" id="btnUndoMove" class="btn-cb-action" title="Lùi 1 nước">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" id="btnRedoMove" class="btn-cb-action" title="Tiến 1 nước">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button type="button" id="btnFlipBoard" class="btn-cb-action" title="Xoay bàn cờ">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+                <div class="cb-action-group">
+                    <button type="button" id="btnResetBoard" class="btn-cb-action btn-cb-action--danger" title="Đặt lại bàn cờ mới">
+                        <i class="fa-solid fa-rotate-left"></i> <span class="btn-text">Reset</span>
+                    </button>
+                    <button type="button" id="btnForceAnalyze" class="btn-cb-action btn-cb-action--primary" title="Phân tích thế cờ">
+                        <i class="fa-solid fa-bolt"></i> <span class="btn-text">Phân Tích</span>
+                    </button>
+                </div>
+                <div class="cb-action-group">
+                    <button type="button" id="btnZoomOut" class="btn-cb-action" title="Thu nhỏ bàn cờ (-10%)">
+                        <i class="fa-solid fa-magnifying-glass-minus"></i>
+                    </button>
+                    <span id="txtBoardScale" class="board-scale-badge" title="Tỉ lệ bàn cờ">100%</span>
+                    <button type="button" id="btnZoomIn" class="btn-cb-action" title="Phóng to bàn cờ (+10%)">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    </button>
+                    <button type="button" id="btnZoomReset" class="btn-cb-action" title="Đặt lại kích thước chuẩn 100%">
+                        <i class="fa-solid fa-arrow-rotate-right"></i>
+                    </button>
+                </div>
             </div>
         </section>
 
 
         <!-- RIGHT PANEL: Engine Analysis & Best Move Spotlight -->
         <section class="cb-card cb-card-right">
-            <div class="cb-card-title">
-                <i class="fa-solid fa-microchip" style="color:var(--cb-purple);"></i> PHÂN TÍCH ENGINE
+            <div class="cb-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i class="fa-solid fa-microchip" style="color:var(--cb-purple);"></i> PHÂN TÍCH ENGINE</span>
+                <button type="button" id="btnGameReview" class="cb-btn-mini" style="background:rgba(234,179,8,0.15); color:var(--cb-gold); border:1px solid rgba(234,179,8,0.3); font-size:0.75rem; padding:3px 8px; border-radius:var(--cb-radius);" title="Tổng kết ván đấu">
+                    <i class="fa-solid fa-chart-simple"></i> Báo Cáo
+                </button>
             </div>
 
-            <!-- Active Engine Badge Indicator -->
-            <div class="cb-panel" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px;">
-                <span style="font-size:0.72rem; font-weight:800; color:#ffffff;">ENGINE:</span>
-                <span id="activeEngineBadge" class="badge-engine-status unavail"><i class="fa-solid fa-circle-xmark"></i> UNAVAILABLE</span>
-            </div>
-
-            <!-- Engine Analyzing State Box -->
-            <div id="engineAnalyzingStateBox" class="cb-panel" style="text-align:center; padding:10px;">
-                <div id="engineStateTitle" style="font-size:0.88rem; font-weight:800; color:#ffffff;">
-                    CHƯA CHỌN BÊN CHO BOT
-                </div>
-                <div id="engineTelemetrySummary" style="font-size:0.75rem; color:var(--cb-text-muted); margin-top:4px; font-variant-numeric: tabular-nums;">
-                    Depth: - | Nodes: - | NPS: - | Time: -
-                </div>
-            </div>
-
-            <!-- Spotlight Best Move Box -->
-            <div class="recommended-move-spotlight">
-                <div class="spotlight-label">
-                    <i class="fa-solid fa-fire" style="color:var(--cb-orange);"></i> <span id="lblSpotlightTitle">HÃY CHỌN BÊN CHO BOT</span>
-                </div>
-                <div id="recommendedBestMoveText" class="spotlight-move-val">-</div>
-                <div id="evalStatusText" style="font-size:0.82rem; font-weight:700; color:#ffffff;">Chưa chọn bên cho Bot</div>
-                <div id="engineSourceBadge" style="font-size:0.72rem; font-weight:700; color:#94a3b8; margin-top:4px;">Source: -</div>
-            </div>
-
-            <!-- Engine Stats Grid -->
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
-                <div class="cb-stat">
-                    <div class="cb-stat-label">DEPTH</div>
-                    <div id="statEngineDepth" class="cb-stat-value">-</div>
-                </div>
-                <div class="cb-stat">
-                    <div class="cb-stat-label">NODES</div>
-                    <div id="statEngineNodes" class="cb-stat-value">-</div>
-                </div>
-                <div class="cb-stat">
-                    <div class="cb-stat-label">NPS</div>
-                    <div id="statEngineNps" class="cb-stat-value">-</div>
-                </div>
-            </div>
-
-            <!-- Top 3 Moves List -->
-            <div>
-                <label class="cb-field-label">
-                    <i class="fa-solid fa-list-ol" style="color:var(--cb-steel);"></i> TOP NƯỚC ĐI:
-                </label>
-                <div id="topMovesListContainer" class="top-moves-list"></div>
-            </div>
-
-            <!-- Best Line PV -->
-            <div>
-                <label class="cb-field-label" style="margin-bottom:4px;">
-                    <i class="fa-solid fa-code-branch" style="color:var(--cb-purple);"></i> BIẾN THỂ CHÍNH:
-                </label>
-                <div id="bestLineText" class="cb-code">-</div>
-            </div>
-
-            <!-- Giai Đoạn Trận Đấu -->
-            <div id="gamePhaseContainer" class="cb-panel--info" style="margin-bottom:2px; display:none;">
-                <strong style="display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:0.85rem; color:#ffffff;">
-                    <i class="fa-solid fa-chess-board" style="color:var(--cb-cyan);"></i> <span id="gamePhaseTitle">KHAI CUỘC</span>
-                </strong>
-                <span id="gamePhaseGuidance" style="line-height: 1.5; font-size:0.78rem; color:#ffffff;">-</span>
-            </div>
-
-            <!-- AI Natural Commentary Explanation (Only shown in Practice / Play vs Bot mode) -->
-            <div id="aiExplanationSection" style="display:none;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <label class="cb-field-label" style="margin-bottom:0;">
-                        <i class="fa-solid fa-brain" style="color:var(--cb-indigo);"></i> GIẢI THÍCH:
-                    </label>
-                    <button type="button" id="btnExplainMove" class="cb-btn-mini" title="Hiển thị mũi tên mô phỏng">
-                        <i class="fa-solid fa-diagram-project" style="color:var(--cb-purple);"></i> Tại sao?
+            <!-- Game Review Side Panel (In-place in right panel, no modal over board) -->
+            <div id="gameReviewSidePanel" class="cb-panel" style="display:none; flex-direction:column; gap:10px; padding:10px; border-color:rgba(234,179,8,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--cb-border); padding-bottom:6px;">
+                    <span style="font-size:0.82rem; font-weight:800; color:var(--cb-gold);">
+                        <i class="fa-solid fa-chart-line"></i> BÁO CÁO VÁN ĐẤU
+                    </span>
+                    <button type="button" id="btnCloseSideReview" class="cb-btn-mini" style="background:var(--cb-inset); color:var(--cb-text-muted); border:1px solid var(--cb-border); border-radius:var(--cb-radius);" title="Đóng báo cáo">
+                        <i class="fa-solid fa-xmark"></i> Đóng
                     </button>
                 </div>
-                <div id="aiExplanationTextContent" class="ai-commentary-box">
-                    Vui lòng chọn <i class="fa-solid fa-chess-king king-icon--w" style="font-size:14px;"></i> <b>BOT TRẮNG</b> hoặc <i class="fa-solid fa-chess-king king-icon--b" style="font-size:14px;"></i> <b>BOT ĐEN</b> để bắt đầu.
+
+                <!-- Action Container -->
+                <div id="reviewSideActionContainer" style="text-align:center; padding:6px 0;">
+                    <div style="font-size:0.78rem; color:var(--cb-text-muted); margin-bottom:8px;">
+                        Phân tích độ chính xác &amp; các nước đi của ván đấu hiện tại.
+                    </div>
+                    <button type="button" id="btnStartSideReview" class="cb-btn cb-btn--primary" style="font-size:0.82rem; padding:6px 14px; width:100%; border-radius:var(--cb-radius);">
+                        <i class="fa-solid fa-bolt"></i> Bắt đầu phân tích
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div id="reviewSideProgressContainer" style="display:none; padding:4px 0;">
+                    <div style="font-size:0.75rem; color:#ffffff; margin-bottom:6px; display:flex; justify-content:space-between;">
+                        <span id="reviewSideProgressText">Đang phân tích: 0/0 nước...</span>
+                        <span><i class="fa-solid fa-brain fa-spin" style="color:var(--cb-gold);"></i> Analyzing</span>
+                    </div>
+                    <div style="width:100%; height:6px; background:var(--cb-inset); border-radius:var(--cb-radius); overflow:hidden;">
+                        <div id="reviewSideProgressBar" style="width:0%; height:100%; background:var(--cb-gold); transition:width 0.2s;"></div>
+                    </div>
+                </div>
+
+                <!-- Content Container -->
+                <div id="reviewSideContentContainer" style="display:none; flex-direction:column; gap:8px;">
+                    <!-- Accuracy Cards -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                        <div class="cb-acc-card" style="padding:8px 4px;">
+                            <div id="lblSideAccPlayer1" style="font-size:0.68rem; color:var(--cb-text-muted); margin-bottom:2px; font-weight:700;">TRẮNG</div>
+                            <div id="reviewSideAccWhite" style="font-size:1.3rem; font-weight:900; color:#ffffff;">0%</div>
+                        </div>
+                        <div class="cb-acc-card" style="padding:8px 4px;">
+                            <div id="lblSideAccPlayer2" style="font-size:0.68rem; color:var(--cb-text-muted); margin-bottom:2px; font-weight:700;">ĐEN</div>
+                            <div id="reviewSideAccBlack" style="font-size:1.3rem; font-weight:900; color:#1a1a1c; background:#e8e8ea; display:inline-block; padding:1px 8px; border-radius:var(--cb-radius);">0%</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Breakdown -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                        <div id="reviewSideStatsWhite" class="cb-panel" style="font-size:0.7rem; color:#ffffff; padding:6px 6px;"></div>
+                        <div id="reviewSideStatsBlack" class="cb-panel" style="font-size:0.7rem; color:#ffffff; padding:6px 6px;"></div>
+                    </div>
+
+                    <!-- AI Commentary -->
+                    <div class="cb-panel--gold" style="display:block; padding:8px 10px; border-radius:var(--cb-radius);">
+                        <div style="font-weight:800; color:#ffffff; margin-bottom:4px; font-size:0.75rem;">
+                            <i class="fa-solid fa-robot" style="color:var(--cb-accent);"></i> NHẬN XÉT TỪ AI:
+                        </div>
+                        <div id="reviewSideSummaryText" style="color:#ffffff; font-size:0.75rem; line-height:1.45;">Đang chờ dữ liệu...</div>
+                    </div>
                 </div>
             </div>
 
-            <div id="engineStatusIndicator" class="cb-status-line">
-                HÃY CHỌN BÊN CHO BOT
-            </div>
+            <div id="engineAnalysisBody" style="display:flex; flex-direction:column; gap:10px;">
+                <!-- Active Engine Badge Indicator -->
+                <div class="cb-panel" style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px;">
+                    <span style="font-size:0.72rem; font-weight:800; color:#ffffff;">ENGINE:</span>
+                    <span id="activeEngineBadge" class="badge-engine-status unavail"><i class="fa-solid fa-circle-xmark"></i> UNAVAILABLE</span>
+                </div>
 
-            <!-- Debug Panel (hidden by default, toggle via settings) -->
-            <div id="engineDebugPanel" class="debug-panel-box">
-                <div style="font-weight:800; border-bottom:1px solid #3a3a40; padding-bottom:4px; margin-bottom:6px; color:#ffffff;">
-                    <i class="fa-solid fa-microchip" style="color:var(--cb-steel);"></i> ENGINE TELEMETRY &amp; DEBUG
+                <!-- Engine Analyzing State Box -->
+                <div id="engineAnalyzingStateBox" class="cb-panel" style="text-align:center; padding:10px;">
+                    <div id="engineStateTitle" style="font-size:0.88rem; font-weight:800; color:#ffffff;">
+                        CHƯA CHỌN BÊN CHO BOT
+                    </div>
+                    <div id="engineTelemetrySummary" style="font-size:0.75rem; color:var(--cb-text-muted); margin-top:4px; font-variant-numeric: tabular-nums;">
+                        Depth: - | Nodes: - | NPS: - | Time: -
+                    </div>
                 </div>
-                <div><strong>ENGINE VERSION:</strong> <span id="debugEngineVersionText">-</span></div>
-                <div><strong>ENGINE SOURCE:</strong> <span id="debugSourceText">-</span></div>
-                <div><strong>THREADS:</strong> <span id="debugThreadsText">8</span> | <strong>HASH:</strong> <span id="debugHashText">256MB</span></div>
-                <div><strong>TIME CONTROL:</strong> <span id="debugTimeText">5000ms</span></div>
-                <div><strong>DEPTH:</strong> <span id="debugDepthText">-</span> | <strong>SELDEPTH:</strong> <span id="debugSeldepthText">-</span></div>
-                <div><strong>NODES:</strong> <span id="debugNodesText">-</span> | <strong>NPS:</strong> <span id="debugNpsText">-</span></div>
-                <div><strong>SCORE:</strong> <span id="debugRawScoreText">-</span></div>
-                <div><strong>ESTIMATED STABILITY:</strong> <span id="debugStabilityText" style="font-weight:800;">-</span></div>
-                <div><strong>ADAPTIVE EXIT REASON:</strong> <span id="debugAdaptiveReasonText">-</span></div>
-                <div style="border-top:1px dashed #3a3a40; margin-top:6px; padding-top:6px; color:#ffffff; font-weight:800;">
-                    <i class="fa-solid fa-crosshairs" style="color:var(--cb-gold);"></i> TACTICAL &amp; OPENING:
+
+                <!-- Spotlight Best Move Box -->
+                <div class="recommended-move-spotlight">
+                    <div class="spotlight-label">
+                        <i class="fa-solid fa-fire" style="color:var(--cb-orange);"></i> <span id="lblSpotlightTitle">HÃY CHỌN BÊN CHO BOT</span>
+                    </div>
+                    <div id="recommendedBestMoveText" class="spotlight-move-val">-</div>
+                    <div id="evalStatusText" style="font-size:0.82rem; font-weight:700; color:#ffffff;">Chưa chọn bên cho Bot</div>
+                    <div id="engineSourceBadge" style="font-size:0.72rem; font-weight:700; color:#94a3b8; margin-top:4px;">Source: -</div>
                 </div>
-                <div><strong>TACTICAL MODE:</strong> <span id="debugTacticalModeText" style="font-weight:800;">-</span></div>
-                <div><strong>TACTICAL TYPE:</strong> <span id="debugTacticalTypeText" style="font-weight:800;">-</span></div>
-                <div><strong>OPENING SYSTEM:</strong> <span id="debugOpeningSystemText" style="font-weight:800;">-</span></div>
-                <div><strong>OPENING MOVE:</strong> <span id="debugOpeningMoveText" style="font-weight:800;">-</span> | <strong>CANDIDATE:</strong> <span id="debugOpeningCandidateText" style="font-weight:800;">-</span></div>
-                <div><strong>TACTICAL OPPORTUNITY:</strong> <span id="debugTacticalOpportunityText" style="font-weight:800;">-</span></div>
-                <div><strong>OBJECTIVE BESTMOVE:</strong> <span id="debugObjectiveBestMoveText" style="font-weight:800;">-</span></div>
-                <div><strong>CANDIDATE MOVE:</strong> <span id="debugPlaystyleCandidateText" style="font-weight:800;">-</span></div>
-                <div><strong>EVALUATION GAP:</strong> <span id="debugEvaluationGapText" style="font-weight:800;">-</span></div>
-                <div><strong>OPPONENT BEST RESPONSE:</strong> <span id="debugOpponentResponseText" style="font-weight:800;">-</span></div>
-                <div><strong>VERIFICATION STATUS:</strong> <span id="debugVerificationStatusText" style="font-weight:800;">-</span></div>
-                <div><strong>MATE STATUS:</strong> <span id="debugMateStatusText" style="font-weight:800;">-</span></div>
-                <div><strong>SACRIFICE STATUS:</strong> <span id="debugSacrificeStatusText" style="font-weight:800;">-</span></div>
-                <div><strong>FINAL SELECTED MOVE:</strong> <span id="debugFinalSelectedMoveText" style="font-weight:800;">-</span></div>
-                <div><strong>SELECTION REASON:</strong> <span id="debugPlaystyleReasonText" style="font-size:0.68rem; word-break:break-all;">-</span></div>
-                <div><strong>BESTMOVE (UCI):</strong> <span id="debugBestMoveUciText">-</span></div>
-                <div><strong>PV LINE:</strong> <span id="debugRawPvText" style="word-break:break-all;">-</span></div>
-                <div><strong>FEN:</strong> <span id="debugFenText" style="word-break:break-all; font-size:0.68rem;">-</span></div>
-                <div><strong>ANALYSIS ID:</strong> <span id="debugAnalysisIdText" style="font-size:0.68rem;">-</span></div>
+
+                <!-- Engine Stats Grid -->
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;">
+                    <div class="cb-stat">
+                        <div class="cb-stat-label">DEPTH</div>
+                        <div id="statEngineDepth" class="cb-stat-value">-</div>
+                    </div>
+                    <div class="cb-stat">
+                        <div class="cb-stat-label">NODES</div>
+                        <div id="statEngineNodes" class="cb-stat-value">-</div>
+                    </div>
+                    <div class="cb-stat">
+                        <div class="cb-stat-label">NPS</div>
+                        <div id="statEngineNps" class="cb-stat-value">-</div>
+                    </div>
+                </div>
+
+                <!-- Top 3 Moves List -->
+                <div>
+                    <label class="cb-field-label">
+                        <i class="fa-solid fa-list-ol" style="color:var(--cb-steel);"></i> TOP NƯỚC ĐI:
+                    </label>
+                    <div id="topMovesListContainer" class="top-moves-list"></div>
+                </div>
+
+                <!-- Best Line PV -->
+                <div>
+                    <label class="cb-field-label" style="margin-bottom:4px;">
+                        <i class="fa-solid fa-code-branch" style="color:var(--cb-purple);"></i> BIẾN THỂ CHÍNH:
+                    </label>
+                    <div id="bestLineText" class="cb-code">-</div>
+                </div>
+
+                <!-- Giai Đoạn Trận Đấu -->
+                <div id="gamePhaseContainer" class="cb-panel--info" style="margin-bottom:2px; display:none;">
+                    <strong style="display:flex; align-items:center; gap:6px; margin-bottom:4px; font-size:0.85rem; color:#ffffff;">
+                        <i class="fa-solid fa-chess-board" style="color:var(--cb-cyan);"></i> <span id="gamePhaseTitle">KHAI CUỘC</span>
+                    </strong>
+                    <span id="gamePhaseGuidance" style="line-height: 1.5; font-size:0.78rem; color:#ffffff;">-</span>
+                </div>
+
+                <!-- AI Natural Commentary Explanation (Only shown in Practice / Play vs Bot mode) -->
+                <div id="aiExplanationSection" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                        <label class="cb-field-label" style="margin-bottom:0;">
+                            <i class="fa-solid fa-brain" style="color:var(--cb-indigo);"></i> GIẢI THÍCH:
+                        </label>
+                        <button type="button" id="btnExplainMove" class="cb-btn-mini" title="Hiển thị mũi tên mô phỏng">
+                            <i class="fa-solid fa-diagram-project" style="color:var(--cb-purple);"></i> Tại sao?
+                        </button>
+                    </div>
+                    <div id="aiExplanationTextContent" class="ai-commentary-box">
+                        Vui lòng chọn <i class="fa-solid fa-chess-king king-icon--w" style="font-size:14px;"></i> <b>BOT TRẮNG</b> hoặc <i class="fa-solid fa-chess-king king-icon--b" style="font-size:14px;"></i> <b>BOT ĐEN</b> để bắt đầu.
+                    </div>
+                </div>
+
+                <div id="engineStatusIndicator" class="cb-status-line">
+                    HÃY CHỌN BÊN CHO BOT
+                </div>
+
+                <!-- Debug Panel (hidden by default, toggle via settings) -->
+                <div id="engineDebugPanel" class="debug-panel-box">
+                    <div style="font-weight:800; border-bottom:1px solid #3a3a40; padding-bottom:4px; margin-bottom:6px; color:#ffffff;">
+                        <i class="fa-solid fa-microchip" style="color:var(--cb-steel);"></i> ENGINE TELEMETRY &amp; DEBUG
+                    </div>
+                    <div><strong>ENGINE VERSION:</strong> <span id="debugEngineVersionText">-</span></div>
+                    <div><strong>ENGINE SOURCE:</strong> <span id="debugSourceText">-</span></div>
+                    <div><strong>THREADS:</strong> <span id="debugThreadsText">8</span> | <strong>HASH:</strong> <span id="debugHashText">256MB</span></div>
+                    <div><strong>TIME CONTROL:</strong> <span id="debugTimeText">5000ms</span></div>
+                    <div><strong>DEPTH:</strong> <span id="debugDepthText">-</span> | <strong>SELDEPTH:</strong> <span id="debugSeldepthText">-</span></div>
+                    <div><strong>NODES:</strong> <span id="debugNodesText">-</span> | <strong>NPS:</strong> <span id="debugNpsText">-</span></div>
+                    <div><strong>SCORE:</strong> <span id="debugRawScoreText">-</span></div>
+                    <div><strong>ESTIMATED STABILITY:</strong> <span id="debugStabilityText" style="font-weight:800;">-</span></div>
+                    <div><strong>ADAPTIVE EXIT REASON:</strong> <span id="debugAdaptiveReasonText">-</span></div>
+                    <div style="border-top:1px dashed #3a3a40; margin-top:6px; padding-top:6px; color:#ffffff; font-weight:800;">
+                        <i class="fa-solid fa-crosshairs" style="color:var(--cb-gold);"></i> TACTICAL &amp; OPENING:
+                    </div>
+                    <div><strong>TACTICAL MODE:</strong> <span id="debugTacticalModeText" style="font-weight:800;">-</span></div>
+                    <div><strong>TACTICAL TYPE:</strong> <span id="debugTacticalTypeText" style="font-weight:800;">-</span></div>
+                    <div><strong>OPENING SYSTEM:</strong> <span id="debugOpeningSystemText" style="font-weight:800;">-</span></div>
+                    <div><strong>OPENING MOVE:</strong> <span id="debugOpeningMoveText" style="font-weight:800;">-</span> | <strong>CANDIDATE:</strong> <span id="debugOpeningCandidateText" style="font-weight:800;">-</span></div>
+                    <div><strong>TACTICAL OPPORTUNITY:</strong> <span id="debugTacticalOpportunityText" style="font-weight:800;">-</span></div>
+                    <div><strong>OBJECTIVE BESTMOVE:</strong> <span id="debugObjectiveBestMoveText" style="font-weight:800;">-</span></div>
+                    <div><strong>CANDIDATE MOVE:</strong> <span id="debugPlaystyleCandidateText" style="font-weight:800;">-</span></div>
+                    <div><strong>EVALUATION GAP:</strong> <span id="debugEvaluationGapText" style="font-weight:800;">-</span></div>
+                    <div><strong>OPPONENT BEST RESPONSE:</strong> <span id="debugOpponentResponseText" style="font-weight:800;">-</span></div>
+                    <div><strong>VERIFICATION STATUS:</strong> <span id="debugVerificationStatusText" style="font-weight:800;">-</span></div>
+                    <div><strong>MATE STATUS:</strong> <span id="debugMateStatusText" style="font-weight:800;">-</span></div>
+                    <div><strong>SACRIFICE STATUS:</strong> <span id="debugSacrificeStatusText" style="font-weight:800;">-</span></div>
+                    <div><strong>FINAL SELECTED MOVE:</strong> <span id="debugFinalSelectedMoveText" style="font-weight:800;">-</span></div>
+                    <div><strong>SELECTION REASON:</strong> <span id="debugPlaystyleReasonText" style="font-size:0.68rem; word-break:break-all;">-</span></div>
+                    <div><strong>BESTMOVE (UCI):</strong> <span id="debugBestMoveUciText">-</span></div>
+                    <div><strong>PV LINE:</strong> <span id="debugRawPvText" style="word-break:break-all;">-</span></div>
+                    <div><strong>FEN:</strong> <span id="debugFenText" style="word-break:break-all; font-size:0.68rem;">-</span></div>
+                    <div><strong>ANALYSIS ID:</strong> <span id="debugAnalysisIdText" style="font-size:0.68rem;">-</span></div>
+                </div>
             </div>
 
             <!-- Hidden toggle button (JS uses ID to toggle) -->
