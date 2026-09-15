@@ -1173,7 +1173,7 @@ input[type="checkbox"] {
 }
 
 /* ==========================================================================
-   ACTION BAR - Perfectly aligned with Chess Board with Elevated Design
+   ACTION BAR - Cyber-Tactical Minimalist Design (2px Radius)
    ========================================================================== */
 
 .cb-action-bar {
@@ -1184,11 +1184,13 @@ input[type="checkbox"] {
     width: 100%;
     max-width: calc(560px * var(--board-scale, 1));
     margin: 0 auto;
-    padding: 6px 10px;
-    background: var(--cb-card-bg);
-    border-radius: var(--cb-radius);
-    border: 1px solid var(--cb-border);
-    box-shadow: var(--cb-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 6px 8px;
+    background: linear-gradient(180deg, rgba(20, 24, 33, 0.96) 0%, rgba(13, 16, 23, 0.98) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--cb-radius, 2px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.07);
     box-sizing: border-box;
     transition: max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1196,15 +1198,38 @@ input[type="checkbox"] {
 .cb-action-group {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 3px;
+    border-radius: var(--cb-radius, 2px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .cb-action-bar .btn-cb-action {
-    height: 32px;
+    height: 30px;
     padding: 0 8px;
     font-size: 11px;
-    font-weight: 800;
-    gap: 4px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--cb-radius, 2px);
+    color: #cbd5e1;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cb-action-bar .btn-cb-action:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.cb-action-bar .btn-cb-action:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.14);
 }
 
 .cb-action-bar #btnRewindStart,
@@ -1214,38 +1239,128 @@ input[type="checkbox"] {
 .cb-action-bar #btnZoomOut,
 .cb-action-bar #btnZoomIn,
 .cb-action-bar #btnZoomReset {
-    width: 32px;
-    min-width: 32px;
+    width: 30px;
+    min-width: 30px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
+.cb-action-bar #btnRewindStart i,
+.cb-action-bar #btnUndoMove i,
+.cb-action-bar #btnRedoMove i {
+    color: #94a3b8;
+    font-size: 12px;
+    transition: color 0.15s ease;
+}
+
+.cb-action-bar #btnRewindStart:hover i,
+.cb-action-bar #btnUndoMove:hover i,
+.cb-action-bar #btnRedoMove:hover i {
+    color: #38bdf8 !important;
+}
+
+.cb-action-bar #btnFlipBoard i {
+    color: #c084fc !important;
+    font-size: 12px;
+    transition: transform 0.25s ease, color 0.15s ease;
+}
+
+.cb-action-bar #btnFlipBoard:hover i {
+    color: #e879f9 !important;
+    transform: rotate(180deg);
+}
+
+/* Center Group: Reset & Analyze Buttons */
+.cb-action-bar #btnResetBoard {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.28) 100%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    padding: 0 10px;
+}
+
+.cb-action-bar #btnResetBoard i {
+    color: #f87171;
+    font-size: 11px;
+}
+
+.cb-action-bar #btnResetBoard:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(185, 28, 28, 0.5) 100%);
+    border-color: rgba(248, 113, 113, 0.7);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+}
+
+.cb-action-bar #btnResetBoard:hover i {
+    color: #ffffff;
+}
+
+.cb-action-bar #btnForceAnalyze {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(37, 99, 235, 0.35) 100%);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #bae6fd;
+    padding: 0 10px;
+}
+
+.cb-action-bar #btnForceAnalyze i {
+    color: #38bdf8;
+    font-size: 11px;
+    text-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+}
+
+.cb-action-bar #btnForceAnalyze:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.45) 0%, rgba(37, 99, 235, 0.6) 100%);
+    border-color: #38bdf8;
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.45);
+}
+
+.cb-action-bar #btnForceAnalyze:hover i {
+    color: #ffffff;
+}
+
+/* Zoom Controls Group */
+.cb-action-bar #btnZoomOut i,
+.cb-action-bar #btnZoomIn i {
+    color: #94a3b8;
+    font-size: 11px;
+    transition: color 0.15s ease;
+}
+
+.cb-action-bar #btnZoomOut:hover i,
+.cb-action-bar #btnZoomIn:hover i {
+    color: #38bdf8;
+}
+
+.cb-action-bar #btnZoomReset i {
+    color: #64748b;
+    font-size: 11px;
+    transition: transform 0.25s ease, color 0.15s ease;
+}
+
+.cb-action-bar #btnZoomReset:hover i {
+    color: #f59e0b;
+    transform: rotate(90deg);
+}
+
 .cb-action-bar .board-scale-badge {
+    font-family: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', monospace;
     font-size: 0.72rem;
-    padding: 3px 6px;
-    min-width: 38px;
-    height: 28px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.08);
+    border: 1px solid rgba(56, 189, 248, 0.18);
+    border-radius: var(--cb-radius, 2px);
+    padding: 0 6px;
+    min-width: 36px;
+    height: 30px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin: 0 1px;
-}
-
-#btnFlipBoard i {
-    color: var(--cb-purple) !important;
-}
-
-#btnRewindStart i, #btnUndoMove i, #btnRedoMove i {
-    color: var(--cb-steel) !important;
-}
-
-.cb-action-sep {
-    width: 1px;
-    height: 20px;
-    background: var(--cb-border);
-    margin: 0 2px;
+    user-select: none;
+    box-sizing: border-box;
 }
 
 /* ==========================================================================
