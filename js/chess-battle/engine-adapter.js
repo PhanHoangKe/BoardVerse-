@@ -75,7 +75,7 @@ export class StockfishWasmEngine extends IChessEngine {
           if (line.startsWith('id name ')) {
             const name = line.replace('id name ', '').trim();
             if (isEngineVersionAllowed(name)) {
-              this.engineVersion = `${name} WASM`;
+              this.engineVersion = name.toLowerCase().includes('wasm') ? name : `${name} WASM`;
             }
           }
 
