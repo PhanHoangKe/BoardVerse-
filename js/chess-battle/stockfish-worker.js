@@ -13,10 +13,15 @@ let currentNps = 0;
 let engineReady = false;
 let engineVersion = 'Stockfish 18 WASM SIMD';
 
-const REJECTED_PATTERNS = [/2019/i, /multi-variant/i, /stockfish\s*(10|9|8|7|6|5|4|3|2|1)\b/i];
+const REJECTED_PATTERNS = [
+  /2019/i,
+  /multi-variant/i,
+  /stockfish\s*(1|2|3|4|5|6|7|8|9|10|11|12|13|14|15)\b/i
+];
 
 function isVersionAllowed(ver) {
-  if (!ver) return false;
+  if (!ver) return true;
+  if (/stockfish\s*(16|17|18|19|20)/i.test(ver)) return true;
   for (let p of REJECTED_PATTERNS) {
     if (p.test(ver)) return false;
   }
@@ -24,13 +29,11 @@ function isVersionAllowed(ver) {
 }
 
 try {
-  importScripts('stockfish-18-simd.js');
-  if (typeof Stockfish === 'function') {
-    engine = Stockfish();
-  }
+  importScripts('stockfish-18-worker.js#stockfish.wasm');
 } catch (err) {
-  console.error('Failed to load local stockfish-18-simd.js:', err);
+  console.warn('Fallback worker import:', err);
 }
+
 
 if (engine) {
   engine.onmessage = function(event) {
