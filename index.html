@@ -134,6 +134,7 @@
                 <select id="selectAppMode" class="cb-select cb-select--full" style="margin-bottom: 10px;">
                     <option value="ASSISTANT" selected>TRỢ LÝ (Bot ở dưới - Nhập cờ đối thủ)</option>
                     <option value="PLAY_VS_BOT">LUYỆN TẬP (Bạn ở dưới - Chơi với Bot)</option>
+                    <option value="PUZZLES">LUYỆN THẾ CỜ (Chiến Thuật / Puzzles)</option>
                 </select>
 
                 <!-- Nút Tự Xếp Bàn Cờ Kín Đáo Bên Chế Độ Luyện Tập -->
@@ -423,6 +424,31 @@
                             <div id="lblSideAccPlayer2" style="font-size:0.68rem; color:var(--cb-text-muted); margin-bottom:2px; font-weight:700;">ĐEN</div>
                             <div id="reviewSideAccBlack" style="font-size:1.3rem; font-weight:900; color:#1a1a1c; background:#e8e8ea; display:inline-block; padding:1px 8px; border-radius:var(--cb-radius);">0%</div>
                         </div>
+                    </div>
+
+                    <!-- Interactive Advantage Graph -->
+                    <div class="cb-review-chart-container">
+                        <div class="cb-review-chart-header">
+                            <span><i class="fa-solid fa-chart-area" style="color:var(--cb-cyan);"></i> BIỂU ĐỒ LỢI THẾ VÁN ĐẤU</span>
+                            <span id="chartMoveHoverText" style="color:#ffffff; font-family:'JetBrains Mono',monospace;">Nước 1</span>
+                        </div>
+                        <svg id="gameReviewAdvantageChart" viewBox="0 0 320 100" preserveAspectRatio="none">
+                            <defs>
+                                <linearGradient id="evalGradWhite" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05"/>
+                                </linearGradient>
+                                <linearGradient id="evalGradBlack" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.05"/>
+                                    <stop offset="100%" stop-color="#0284c7" stop-opacity="0.8"/>
+                                </linearGradient>
+                            </defs>
+                            <g id="chartGridGroup"></g>
+                            <line x1="0" y1="50" x2="320" y2="50" class="chart-zero-line"/>
+                            <path id="chartAreaPath" d="" class="chart-eval-area"/>
+                            <path id="chartLinePath" d="" class="chart-eval-line"/>
+                            <g id="chartPointsGroup"></g>
+                        </svg>
                     </div>
 
                     <!-- Stats Breakdown -->
@@ -855,13 +881,49 @@
 
     <!-- Bottom Move History PGN Timeline -->
     <footer class="cb-footer">
-        <div class="cb-footer-label">
-            <i class="fa-solid fa-clock-rotate-left" style="color:var(--cb-gold);"></i> LỊCH SỬ NƯỚC ĐI (PGN):
+        <div class="cb-footer-top">
+            <div class="cb-footer-label">
+                <i class="fa-solid fa-clock-rotate-left" style="color:var(--cb-gold);"></i> LỊCH SỬ NƯỚC ĐI (PGN):
+            </div>
+            <div class="cb-footer-actions">
+                <button type="button" id="btnOpenImportPgnModal" class="cb-btn-pgn" title="Nhập ván cờ PGN từ máy hoặc Chess.com/Lichess">
+                    <i class="fa-solid fa-file-import" style="color:var(--cb-accent);"></i> Nhập PGN
+                </button>
+                <button type="button" id="btnCopyCurrentPgn" class="cb-btn-pgn" title="Sao chép toàn bộ nước đi PGN">
+                    <i class="fa-solid fa-copy" style="color:var(--cb-gold);"></i> Copy PGN
+                </button>
+                <button type="button" id="btnCopyCurrentFen" class="cb-btn-pgn" title="Sao chép chuỗi FEN thế cờ hiện tại">
+                    <i class="fa-solid fa-share-nodes" style="color:var(--cb-cyan);"></i> Copy FEN
+                </button>
+            </div>
         </div>
         <div id="moveHistoryPgnText" class="cb-footer-pgn">
             Chưa có nước đi nào.
         </div>
     </footer>
+
+    <!-- Import PGN Modal -->
+    <div id="importPgnModal" class="cb-modal">
+        <div class="cb-modal__panel" style="max-width:550px; border-top-color:var(--cb-accent);">
+            <div class="cb-modal__head">
+                <h3 class="cb-modal__title"><i class="fa-solid fa-file-import" style="color:var(--cb-accent);"></i> NHẬP VÁN CỜ PGN</h3>
+                <button type="button" id="btnCloseImportPgnModal" class="cb-modal__close">&times;</button>
+            </div>
+            <div style="padding:14px 0;">
+                <label class="cb-field-label" style="margin-bottom:6px;">Dán chuỗi PGN (từ Chess.com, Lichess, sách cờ...):</label>
+                <textarea id="txtImportPgnInput" class="cb-textarea" rows="7" style="width:100%; box-sizing:border-box; font-family:'JetBrains Mono',monospace; font-size:11.5px; padding:10px; background:var(--cb-inset); border:1px solid var(--cb-border); color:#ffffff; border-radius:var(--cb-radius); resize:vertical;" placeholder="Ví dụ: 1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6... hoặc [Event &quot;Live Chess&quot;]..."></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+                    <label class="cb-btn-pgn" style="cursor:pointer; padding:6px 12px; height:auto; font-size:12px;">
+                        <i class="fa-solid fa-upload"></i> Chọn file .pgn từ máy
+                        <input type="file" id="filePgnUpload" accept=".pgn,.txt" style="display:none;">
+                    </label>
+                    <button type="button" id="btnSubmitImportPgn" class="cb-btn cb-btn--primary" style="padding:6px 16px; font-size:12px; font-weight:800;">
+                        <i class="fa-solid fa-check"></i> NẠP VÁN CỜ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Game Review Modal -->
     <div id="gameReviewModal" class="cb-modal">
@@ -894,23 +956,10 @@
                     </div>
                 </div>
 
-                <!-- Stats Grid -->
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
-                    <div id="reviewStatsWhite" class="cb-panel" style="font-size:0.82rem; color:#ffffff;"></div>
-                    <div id="reviewStatsBlack" class="cb-panel" style="font-size:0.82rem; color:#ffffff;"></div>
+                <!-- Move list breakdown -->
+                <div id="reviewMoveList" style="display:flex; flex-direction:column; gap:6px;">
+                    <!-- Injected via JS -->
                 </div>
-
-                <!-- Summary Commentary -->
-                <div class="cb-panel--gold" style="display:block;">
-                    <div style="font-weight:800; color:#ffffff; margin-bottom:8px;"><i class="fa-solid fa-robot" style="color:var(--cb-accent);"></i> ĐÁNH GIÁ CHUNG TỪ AI:</div>
-                    <div id="reviewSummaryText" style="color:#ffffff; font-size:0.88rem; line-height:1.6;">Đang chờ dữ liệu...</div>
-                </div>
-            </div>
-
-            <div id="reviewActionContainer" style="margin-top:20px; text-align:center;">
-                <button type="button" id="btnStartReview" class="cb-btn cb-btn--primary" style="font-size:0.95rem; padding:10px 22px;">
-                    <i class="fa-solid fa-bolt"></i> BẮT ĐẦU PHÂN TÍCH
-                </button>
             </div>
         </div>
     </div>
@@ -937,6 +986,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="cbToastContainer"></div>
 
     <!-- Checkmate Overlay -->
     <div id="checkmateOverlay" class="checkmate-overlay">

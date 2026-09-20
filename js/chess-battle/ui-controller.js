@@ -9,6 +9,8 @@ import { StockfishWasmEngine } from './engine-adapter.js';
 import { EngineManager } from './engine-manager.js';
 import { AnalysisManager } from './analysis-manager.js';
 import { AIExplanationService } from './ai-explanation-service.js';
+import { RealisticAudioFX } from '../shared/realistic-audio.js';
+import { PuzzleManager } from './puzzles/puzzle-manager.js';
 
 export const EngineUiState = {
   IDLE: 'IDLE',
@@ -183,6 +185,8 @@ export class UIController {
     this.engineManager = new EngineManager(this.engineAdapter);
     this.analysisManager = new AnalysisManager(this.engineAdapter, this.engineManager);
     this.aiExplanationService = new AIExplanationService();
+    this.audioFX = new RealisticAudioFX();
+    this.puzzleManager = new PuzzleManager(this);
 
     this.chessState = {
       botColor: null, // REQUIREMENT 1: Must start as NULL, not 'w' or 'b'!
@@ -263,6 +267,8 @@ export class UIController {
     if (selectTheme) selectTheme.value = savedTheme;
 
     // 1. Immediate UI Render with Neutral Idle State
+    this.initToastSystem();
+    this.initPgnImportExport();
     this.bindEvents();
     this.renderBoard();
     this.updateUI();
@@ -425,14 +431,16 @@ export class UIController {
     if (btnBotWhite) {
       btnBotWhite.addEventListener('click', () => {
         if (!this.active) return;
-        if (this.appMode === 'PLAY_VS_BOT') this.setBotColor('b'); // You play White -> Bot is Black
+        if (this.appMode === 'PUZZLES') this.puzzleManager.prevPuzzle();
+        else if (this.appMode === 'PLAY_VS_BOT') this.setBotColor('b'); // You play White -> Bot is Black
         else this.setBotColor('w');
       });
     }
     if (btnBotBlack) {
       btnBotBlack.addEventListener('click', () => {
         if (!this.active) return;
-        if (this.appMode === 'PLAY_VS_BOT') this.setBotColor('w'); // You play Black -> Bot is White
+        if (this.appMode === 'PUZZLES') this.puzzleManager.nextPuzzle();
+        else if (this.appMode === 'PLAY_VS_BOT') this.setBotColor('w'); // You play Black -> Bot is White
         else this.setBotColor('b');
       });
     }
@@ -1249,6 +1257,20 @@ export class UIController {
     const gamePhaseContainer = document.getElementById('gamePhaseContainer');
     const practiceEditorSection = document.getElementById('practiceEditorSection');
 
+    if (mode === 'PUZZLES') {
+      this.puzzleManager.start();
+      if (practiceEditorSection) practiceEditorSection.style.display = 'none';
+      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-puzzle-piece" style="color:var(--cb-gold);"></i> CHẾ ĐỘ GIẢI THẾ CỜ CHIẾN THUẬT:';
+      if (lblW) lblW.textContent = 'BÀI TRƯỚC';
+      if (lblB) lblB.textContent = 'BÀI TIẾP THEO';
+      if (aiExplanationSection) aiExplanationSection.style.display = 'block';
+      if (gamePhaseContainer) gamePhaseContainer.style.display = 'none';
+      this.showToast('Đã kích hoạt chế độ Luyện Thế Cờ! Hãy tìm nước đi chiến thuật tối ưu.', 'info');
+      return;
+    } else {
+      this.puzzleManager.stop();
+    }
+
     if (mode === 'PLAY_VS_BOT') {
       if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-user"></i> CHỌN BÊN CỦA BẠN (BẠN Ở PHÍA DƯỚI BÀN CỜ):';
       if (lblW) lblW.textContent = 'BẠN CẦM TRẮNG';
@@ -1564,6 +1586,9 @@ export class UIController {
 
     const summaryEl = document.getElementById('reviewSideSummaryText') || document.getElementById('reviewSummaryText');
     if (summaryEl) summaryEl.textContent = summary;
+
+    // Render Advantage Curve SVG Chart
+    this.renderAdvantageChart(whiteScores, historyList);
   }
 
   categorizeMove(cpLoss, stats) {
@@ -1654,14 +1679,19 @@ export class UIController {
     }
 
     container.innerHTML = archive.map(game => `
-        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:2px; padding:12px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:2px; padding:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
             <div>
                 <div style="font-weight:800; color:var(--cb-gold); margin-bottom:4px;">${game.date}</div>
                 <div style="font-size:0.8rem; color:#cbd5e1;">Số nước đi: ${game.movesCount} | Trạng thái: ${game.result}</div>
             </div>
-            <button class="btn-load-archived-game" data-id="${game.id}" style="background:var(--cb-accent); color:#1c1a17; border:none; padding:6px 12px; border-radius:2px; font-weight:700; cursor:pointer;">
-                <i class="fa-solid fa-folder-open"></i> Mở Lại
-            </button>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn-download-archived-pgn cb-btn-pgn" data-id="${game.id}" style="height:32px; padding:0 10px;">
+                    <i class="fa-solid fa-download"></i> Tải PGN
+                </button>
+                <button class="btn-load-archived-game" data-id="${game.id}" style="background:var(--cb-accent); color:#1c1a17; border:none; padding:6px 12px; border-radius:2px; font-weight:700; cursor:pointer; height:32px; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-folder-open"></i> Mở Lại
+                </button>
+            </div>
         </div>
     `).join('');
 
@@ -1671,6 +1701,37 @@ export class UIController {
             this.loadGameFromArchive(id);
         });
     });
+
+    container.querySelectorAll('.btn-download-archived-pgn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.getAttribute('data-id'));
+            this.downloadPgnFile(id);
+        });
+    });
+  }
+
+  downloadPgnFile(id) {
+    const archiveStr = localStorage.getItem('chessBattleArchive');
+    if (!archiveStr) return;
+    try {
+      const archive = JSON.parse(archiveStr);
+      const game = archive.find(g => g.id === id);
+      if (game && game.pgn) {
+        const blob = new Blob([game.pgn], { type: 'application/x-chess-pgn' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `boardverse-game-${game.id || Date.now()}.pgn`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.showToast('Đã tải file PGN về máy thành công!', 'success');
+      }
+    } catch (e) {
+      this.showToast('Lỗi khi tải file PGN!', 'warning');
+    }
+  }
   }
 
   loadGameFromArchive(id) {
@@ -2052,6 +2113,16 @@ export class UIController {
           e.preventDefault();
           const fromSq = e.dataTransfer.getData('text/plain');
           if (fromSq && fromSq !== square) {
+            if (this.appMode === 'PUZZLES') {
+              const uciMove = fromSq + square;
+              const moveRes = this.game.move({ from: fromSq, to: square, promotion: 'q' });
+              if (moveRes) {
+                this.renderBoard();
+                this.updateTimelinePgn();
+                this.puzzleManager.handleUserMove(uciMove);
+              }
+              return;
+            }
             this.handleBlackMoveInput({ from: fromSq, to: square });
           }
         });
@@ -2114,6 +2185,39 @@ export class UIController {
       this.selectedSquare = null;
       this.lastMove = null;
       this.renderBoard();
+      return;
+    }
+
+    if (this.appMode === 'PUZZLES') {
+      const piece = this.game.get(square);
+      if (this.selectedSquare) {
+        if (this.selectedSquare === square) {
+          this.selectedSquare = null;
+          this.renderBoard();
+          return;
+        }
+        const fromSq = this.selectedSquare;
+        const toSq = square;
+        const uciMove = fromSq + toSq;
+        const moveRes = this.game.move({ from: fromSq, to: toSq, promotion: 'q' });
+        if (moveRes) {
+          this.selectedSquare = null;
+          this.renderBoard();
+          this.updateTimelinePgn();
+          this.puzzleManager.handleUserMove(uciMove);
+          return;
+        }
+        if (piece && piece.color === this.game.turn()) {
+          this.selectedSquare = square;
+          this.renderBoard();
+          this.highlightLegalMoves(square);
+          return;
+        }
+      } else if (piece && piece.color === this.game.turn()) {
+        this.selectedSquare = square;
+        this.renderBoard();
+        this.highlightLegalMoves(square);
+      }
       return;
     }
 
@@ -2539,19 +2643,17 @@ export class UIController {
   }
 
   playMoveSound(moveRes) {
+    if (!this.audioFX) return;
     try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.frequency.value = moveRes.captured ? 600 : 400;
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
+      if (this.game.inCheck()) {
+        this.audioFX.playCheck();
+      } else if (moveRes && moveRes.flags && (moveRes.flags.includes('k') || moveRes.flags.includes('q'))) {
+        this.audioFX.playCastle();
+      } else if (moveRes && moveRes.captured) {
+        this.audioFX.playCapture();
+      } else {
+        this.audioFX.playMove();
+      }
     } catch (e) {
       // Audio fallback
     }
@@ -2740,6 +2842,255 @@ export class UIController {
       overlay.style.display = 'none';
       overlay.querySelectorAll('line').forEach(l => l.remove());
     }, 5000);
+  }
+
+  /* ==========================================================================
+     TOAST NOTIFICATIONS SYSTEM
+     ========================================================================== */
+
+  initToastSystem() {
+    let container = document.getElementById('cbToastContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'cbToastContainer';
+      document.body.appendChild(container);
+    }
+  }
+
+  showToast(message, type = 'info', duration = 3000) {
+    let container = document.getElementById('cbToastContainer');
+    if (!container) {
+      this.initToastSystem();
+      container = document.getElementById('cbToastContainer');
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `cb-toast cb-toast--${type}`;
+    
+    let icon = 'fa-circle-info';
+    if (type === 'success') icon = 'fa-circle-check';
+    if (type === 'warning') icon = 'fa-triangle-exclamation';
+
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    }, duration);
+  }
+
+  /* ==========================================================================
+     PGN IMPORT / EXPORT & QUICK COPY
+     ========================================================================== */
+
+  initPgnImportExport() {
+    const btnOpen = document.getElementById('btnOpenImportPgnModal');
+    const modal = document.getElementById('importPgnModal');
+    const btnClose = document.getElementById('btnCloseImportPgnModal');
+    const btnSubmit = document.getElementById('btnSubmitImportPgn');
+    const txtInput = document.getElementById('txtImportPgnInput');
+    const fileUpload = document.getElementById('filePgnUpload');
+    const btnCopyPgn = document.getElementById('btnCopyCurrentPgn');
+    const btnCopyFen = document.getElementById('btnCopyCurrentFen');
+
+    if (btnOpen && modal) {
+      btnOpen.addEventListener('click', () => {
+        modal.classList.add('active');
+        if (txtInput) txtInput.focus();
+      });
+    }
+
+    if (btnClose && modal) {
+      btnClose.addEventListener('click', () => modal.classList.remove('active'));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    }
+
+    if (fileUpload && txtInput) {
+      fileUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            txtInput.value = evt.target.result;
+          };
+          reader.readAsText(file);
+        }
+      });
+    }
+
+    if (btnSubmit) {
+      btnSubmit.addEventListener('click', () => {
+        const pgnStr = txtInput ? txtInput.value.trim() : '';
+        if (!pgnStr) {
+          this.showToast('Vui lòng dán chuỗi PGN hoặc chọn file!', 'warning');
+          return;
+        }
+        try {
+          const newGame = new Chess();
+          const success = newGame.loadPgn(pgnStr);
+          if (success) {
+            this.game = newGame;
+            this.currentMoveIndex = this.game.history().length;
+            this.boardFlipped = false;
+            this.selectedSquare = null;
+            this.lastMove = null;
+            const history = this.game.history({ verbose: true });
+            if (history.length > 0) {
+              const last = history[history.length - 1];
+              this.lastMove = { from: last.from, to: last.to, isBot: last.color === this.chessState.botColor };
+            }
+            this.renderBoard();
+            this.updateUI();
+            this.updateTimelinePgn();
+            this.clearHighlights();
+            if (modal) modal.classList.remove('active');
+            if (txtInput) txtInput.value = '';
+            this.showToast('Đã nạp ván cờ PGN thành công! Có thể bấm từng nước hoặc chạy Báo Cáo.', 'success');
+            if (this.audioFX) this.audioFX.playMove();
+            if (this.chessState.botColor) {
+              this.triggerAnalysis(true);
+            }
+          } else {
+            this.showToast('Không thể đọc định dạng PGN này. Vui lòng kiểm tra lại!', 'warning');
+          }
+        } catch (err) {
+          this.showToast('Lỗi khi đọc PGN: ' + err.message, 'warning');
+        }
+      });
+    }
+
+    if (btnCopyPgn) {
+      btnCopyPgn.addEventListener('click', () => {
+        const pgn = this.game.pgn();
+        if (!pgn || pgn.trim() === '') {
+          this.showToast('Chưa có nước đi nào trong ván cờ!', 'warning');
+          return;
+        }
+        navigator.clipboard.writeText(pgn).then(() => {
+          this.showToast('Đã sao chép toàn bộ PGN vào clipboard!', 'success');
+        }).catch(() => {
+          this.showToast('Không thể sao chép, hãy thử lại.', 'warning');
+        });
+      });
+    }
+
+    if (btnCopyFen) {
+      btnCopyFen.addEventListener('click', () => {
+        const fen = this.game.fen();
+        navigator.clipboard.writeText(fen).then(() => {
+          this.showToast('Đã sao chép chuỗi FEN thế cờ vào clipboard!', 'info');
+        }).catch(() => {
+          this.showToast('Không thể sao chép, hãy thử lại.', 'warning');
+        });
+      });
+    }
+  }
+
+  /* ==========================================================================
+     ADVANTAGE & ACCURACY GRAPH (Game Review Chart)
+     ========================================================================== */
+
+  renderAdvantageChart(whiteScores = [], historyList = []) {
+    const svg = document.getElementById('gameReviewAdvantageChart');
+    const areaPath = document.getElementById('chartAreaPath');
+    const linePath = document.getElementById('chartLinePath');
+    const pointsGroup = document.getElementById('chartPointsGroup');
+    const gridGroup = document.getElementById('chartGridGroup');
+    const hoverText = document.getElementById('chartMoveHoverText');
+
+    if (!svg || !linePath || !pointsGroup) return;
+
+    pointsGroup.innerHTML = '';
+    if (gridGroup) gridGroup.innerHTML = '';
+
+    if (!whiteScores || whiteScores.length === 0) return;
+
+    const width = 320;
+    const height = 100;
+    const midY = 50;
+    const maxEval = 600; // clamp visual amplitude to +/- 6.00 pawns (600 cp)
+
+    const stepX = width / Math.max(1, whiteScores.length - 1);
+
+    const points = whiteScores.map((scoreCp, idx) => {
+      const x = idx * stepX;
+      // White advantage (>0) goes UP (y < 50), Black advantage (<0) goes DOWN (y > 50)
+      const clampedCp = Math.max(-maxEval, Math.min(maxEval, scoreCp));
+      const y = midY - (clampedCp / maxEval) * (height / 2 - 8);
+      const moveSan = idx === 0 ? 'Bắt đầu' : (historyList[idx - 1] ? historyList[idx - 1].san || '' : '');
+      return { x, y, cp: scoreCp, moveIdx: idx, san: moveSan };
+    });
+
+    // Draw grid lines at +3.00, 0.00, -3.00
+    if (gridGroup) {
+      const linePlus3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      linePlus3.setAttribute('x1', '0');
+      linePlus3.setAttribute('y1', '25');
+      linePlus3.setAttribute('x2', '320');
+      linePlus3.setAttribute('y2', '25');
+      linePlus3.setAttribute('class', 'chart-grid-line');
+      gridGroup.appendChild(linePlus3);
+
+      const lineMinus3 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      lineMinus3.setAttribute('x1', '0');
+      lineMinus3.setAttribute('y1', '75');
+      lineMinus3.setAttribute('x2', '320');
+      lineMinus3.setAttribute('y2', '75');
+      lineMinus3.setAttribute('class', 'chart-grid-line');
+      gridGroup.appendChild(lineMinus3);
+    }
+
+    // Construct line path
+    let pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      pathD += ` L ${points[i].x} ${points[i].y}`;
+    }
+    linePath.setAttribute('d', pathD);
+
+    // Construct area path
+    if (areaPath) {
+      let areaD = `M ${points[0].x} ${midY}`;
+      points.forEach(p => {
+        areaD += ` L ${p.x} ${p.y}`;
+      });
+      areaD += ` L ${points[points.length - 1].x} ${midY} Z`;
+      areaPath.setAttribute('d', areaD);
+    }
+
+    // Draw points & bind click interactions
+    points.forEach(p => {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', p.x);
+      circle.setAttribute('cy', p.y);
+      circle.setAttribute('r', '2.5');
+      circle.setAttribute('fill', p.cp >= 0 ? '#ffffff' : '#38bdf8');
+      circle.setAttribute('class', 'chart-point');
+
+      circle.addEventListener('mouseenter', () => {
+        if (hoverText) {
+          const evalPawns = (p.cp / 100).toFixed(2);
+          const sign = p.cp > 0 ? '+' : '';
+          hoverText.textContent = p.moveIdx === 0 ? `Vị trí đầu (${evalPawns})` : `Nước ${p.moveIdx}: ${p.san} (${sign}${evalPawns})`;
+        }
+      });
+
+      circle.addEventListener('click', () => {
+        if (p.moveIdx === 0) {
+          this.rewindToStart();
+        } else {
+          this.jumpToMove(p.moveIdx - 1);
+        }
+      });
+
+      pointsGroup.appendChild(circle);
+    });
   }
 }
 

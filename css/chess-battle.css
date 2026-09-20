@@ -2857,4 +2857,174 @@ input[type="checkbox"] {
     transform: translateY(-1px);
 }
 
+/* ==========================================================================
+   TOAST NOTIFICATIONS (Floating modern alerts)
+   ========================================================================== */
+
+#cbToastContainer {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.cb-toast {
+    pointer-events: auto;
+    background: linear-gradient(135deg, rgba(24, 29, 41, 0.98) 0%, rgba(15, 18, 26, 0.98) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--cb-radius, 2px);
+    padding: 10px 16px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 1px rgba(255, 255, 255, 0.2);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cb-toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.cb-toast--success {
+    border-left: 3px solid var(--cb-accent);
+}
+
+.cb-toast--success i {
+    color: var(--cb-accent);
+}
+
+.cb-toast--info {
+    border-left: 3px solid var(--cb-cyan);
+}
+
+.cb-toast--info i {
+    color: var(--cb-cyan);
+}
+
+.cb-toast--warning {
+    border-left: 3px solid var(--cb-gold);
+}
+
+.cb-toast--warning i {
+    color: var(--cb-gold);
+}
+
+/* ==========================================================================
+   ADVANTAGE & ACCURACY GRAPH (Game Review Chart)
+   ========================================================================== */
+
+.cb-review-chart-container {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--cb-radius, 2px);
+    padding: 8px;
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+.cb-review-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--cb-text-muted);
+    margin-bottom: 6px;
+}
+
+#gameReviewAdvantageChart {
+    width: 100%;
+    height: 110px;
+    display: block;
+    overflow: visible;
+}
+
+.chart-grid-line {
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-dasharray: 2, 2;
+}
+
+.chart-zero-line {
+    stroke: rgba(255, 255, 255, 0.2);
+    stroke-width: 1;
+}
+
+.chart-eval-area {
+    fill: url(#evalGradWhite);
+    opacity: 0.4;
+}
+
+.chart-eval-area-black {
+    fill: url(#evalGradBlack);
+    opacity: 0.4;
+}
+
+.chart-eval-line {
+    fill: none;
+    stroke: #38bdf8;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.chart-point {
+    cursor: pointer;
+    transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.chart-point:hover {
+    r: 5;
+    fill: #f59e0b !important;
+}
+
+/* PGN Quick Action Bar */
+.cb-footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cb-footer-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cb-btn-pgn {
+    padding: 3px 8px;
+    height: 24px;
+    font-size: 10.5px;
+    font-weight: 700;
+    border-radius: var(--cb-radius, 2px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #cbd5e1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+}
+
+.cb-btn-pgn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
 
