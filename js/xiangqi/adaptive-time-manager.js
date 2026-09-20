@@ -17,7 +17,7 @@
   };
 
   class AdaptiveTimeManager {
-    constructor(preset = 'STRONG') {
+    constructor(preset = 'QUICK') {
       this.setPreset(preset);
       this.stabilityIndex = 0;
       this.moveChangeCount = 0;
@@ -26,7 +26,7 @@
     }
 
     setPreset(preset) {
-      this.preset = TIME_PRESETS[preset] ? preset : 'STRONG';
+      this.preset = TIME_PRESETS[preset] ? preset : 'QUICK';
       this.config = { ...TIME_PRESETS[this.preset] };
     }
 

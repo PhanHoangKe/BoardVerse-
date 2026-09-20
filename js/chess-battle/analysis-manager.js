@@ -20,7 +20,7 @@ export class AnalysisManager {
     this.aiExplanationService = new AIExplanationService();
     this.playstyleLayer = new PlaystyleLayer(25); // 0.25 pawn threshold limit
 
-    this.analysisPreset = 'MAXIMUM'; // MAXIMUM, DEEP, HUMAN_GM, BLITZ_5M, QUICK
+    this.analysisPreset = 'QUICK'; // QUICK (1s default for rapid and easy user experience)
     this.playStyle = 'NATURAL'; // NATURAL, ATTACK, DEFENSE, AUTO
     this.timeControl = 60000; // 60s max time ceiling for MAXIMUM (auto-stops on target depth)
     this.currentAnalysisId = null;
