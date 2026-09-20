@@ -819,7 +819,10 @@ export class Chess {
     } else if (typeof moveObj === 'object') {
       matchedMove = legalMoves.find(m => {
         if (m.from !== moveObj.from || m.to !== moveObj.to) return false;
-        if (moveObj.promotion && m.promotion !== moveObj.promotion.toLowerCase()) return false;
+        if (m.promotion) {
+          const desiredProm = (moveObj.promotion || 'q').toLowerCase();
+          return m.promotion === desiredProm;
+        }
         return true;
       });
     }

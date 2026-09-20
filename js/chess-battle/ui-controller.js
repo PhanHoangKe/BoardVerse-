@@ -10,7 +10,6 @@ import { EngineManager } from './engine-manager.js';
 import { AnalysisManager } from './analysis-manager.js';
 import { AIExplanationService } from './ai-explanation-service.js';
 import { RealisticAudioFX } from '../shared/realistic-audio.js';
-import { PuzzleManager } from './puzzles/puzzle-manager.js';
 
 export const EngineUiState = {
   IDLE: 'IDLE',
@@ -186,7 +185,6 @@ export class UIController {
     this.analysisManager = new AnalysisManager(this.engineAdapter, this.engineManager);
     this.aiExplanationService = new AIExplanationService();
     this.audioFX = new RealisticAudioFX();
-    this.puzzleManager = new PuzzleManager(this);
 
     this.chessState = {
       botColor: null, // REQUIREMENT 1: Must start as NULL, not 'w' or 'b'!
@@ -493,7 +491,12 @@ export class UIController {
     if (btnRewind) btnRewind.addEventListener('click', () => { if (!this.active) return; this.resetToStart(); });
     if (btnUndo) btnUndo.addEventListener('click', () => { if (!this.active) return; this.undoMove(); });
     if (btnRedo) btnRedo.addEventListener('click', () => { if (!this.active) return; this.redoMove(); });
-    if (btnReset) btnReset.addEventListener('click', () => { if (!this.active) return; this.resetBoard(); });
+    if (btnReset) {
+      btnReset.addEventListener('click', () => {
+        if (!this.active) return;
+        this.resetBoard();
+      });
+    }
     if (btnFlip) btnFlip.addEventListener('click', () => { if (!this.active) return; this.toggleFlipBoard(); });
     if (btnAnalyze) {
       btnAnalyze.addEventListener('click', () => {
@@ -1247,62 +1250,80 @@ export class UIController {
   setAppMode(mode) {
     if (!this.active) return;
     this.appMode = mode;
+    const selectAppMode = document.getElementById('selectAppMode');
+    if (selectAppMode && selectAppMode.value !== mode) selectAppMode.value = mode;
+
+    const boxSideSelector = document.getElementById('boxSideSelector');
+    const practiceEditorSection = document.getElementById('practiceEditorSection');
+    const panelBotOptions = document.getElementById('panelBotOptions');
+    const panelOpponentInput = document.getElementById('panelOpponentInput');
+
     const lblSide = document.getElementById('lblSideChoice');
     const lblW = document.getElementById('lblBtnBotWhite');
     const lblB = document.getElementById('lblBtnBotBlack');
     const chkAutoApply = document.getElementById('chkAutoApplyMove');
     const lblOpponentSuggestions = document.getElementById('lblOpponentSuggestions');
-
+    const coachSelect = document.getElementById('selectCoachPreset');
     const aiExplanationSection = document.getElementById('aiExplanationSection');
     const gamePhaseContainer = document.getElementById('gamePhaseContainer');
-    const practiceEditorSection = document.getElementById('practiceEditorSection');
 
-    if (mode === 'PUZZLES') {
-      this.puzzleManager.start();
-      if (practiceEditorSection) practiceEditorSection.style.display = 'none';
-      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-puzzle-piece" style="color:var(--cb-gold);"></i> CHẾ ĐỘ GIẢI THẾ CỜ CHIẾN THUẬT:';
-      if (lblW) lblW.textContent = 'BÀI TRƯỚC';
-      if (lblB) lblB.textContent = 'BÀI TIẾP THEO';
-      if (aiExplanationSection) aiExplanationSection.style.display = 'block';
-      if (gamePhaseContainer) gamePhaseContainer.style.display = 'none';
-      this.showToast('Đã kích hoạt chế độ Luyện Thế Cờ! Hãy tìm nước đi chiến thuật tối ưu.', 'info');
-      return;
-    } else {
-      this.puzzleManager.stop();
+    // Turn off Board Editor if active
+    const editorDock = document.getElementById('boardEditorDock');
+    const btnToggleEditor = document.getElementById('btnToggleBoardEditor');
+    if (this.isEditorMode) {
+      this.isEditorMode = false;
+      if (btnToggleEditor) btnToggleEditor.classList.remove('active');
+      if (editorDock) editorDock.style.display = 'none';
     }
 
     if (mode === 'PLAY_VS_BOT') {
-      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-user"></i> CHỌN BÊN CỦA BẠN (BẠN Ở PHÍA DƯỚI BÀN CỜ):';
+      // 1. CHẾ ĐỘ LUYỆN TẬP: Đấu trực tiếp với bot, ẩn ô gõ nước đối thủ
+      if (boxSideSelector) boxSideSelector.style.display = 'block';
+      if (practiceEditorSection) practiceEditorSection.style.display = 'block';
+      if (panelBotOptions) panelBotOptions.style.display = 'flex';
+      if (panelOpponentInput) panelOpponentInput.style.display = 'none';
+      if (aiExplanationSection) aiExplanationSection.style.display = 'block';
+      if (gamePhaseContainer) gamePhaseContainer.style.display = 'block';
+
+      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-user" style="color:var(--cb-cyan);"></i> CHỌN BÊN CỦA BẠN (BẠN Ở PHÍA DƯỚI BÀN CỜ):';
       if (lblW) lblW.textContent = 'BẠN CẦM TRẮNG';
       if (lblB) lblB.textContent = 'BẠN CẦM ĐEN';
-      if (practiceEditorSection) practiceEditorSection.style.display = 'block';
       if (chkAutoApply) {
-        chkAutoApply.checked = true; // Auto apply must be ON when playing vs bot
+        chkAutoApply.checked = true;
         this.autoApplyBestMove = true;
       }
       if (lblOpponentSuggestions) {
-        lblOpponentSuggestions.innerHTML = '<i class="fa-solid fa-user-graduate"></i> Bật Huấn luyện viên';
+        lblOpponentSuggestions.innerHTML = '<i class="fa-solid fa-user-graduate"></i> Bật Huấn luyện viên AI';
       }
-      const coachSelect = document.getElementById('selectCoachPreset');
       if (coachSelect) coachSelect.style.display = 'block';
-      if (aiExplanationSection) aiExplanationSection.style.display = 'block';
-      if (gamePhaseContainer) gamePhaseContainer.style.display = 'block';
+
+      if (this.chessState.botColor) {
+        this.setBotColor(this.chessState.botColor);
+      } else {
+        this.setInitialIdleState();
+      }
     } else {
-      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-robot"></i> CHỌN BÊN CHO BOT (BOT Ở PHÍA DƯỚI BÀN CỜ):';
+      // 2. CHẾ ĐỘ TRỢ LÝ: Phân tích & Hỗ trợ, hiện ô nhập nước đối thủ
+      if (boxSideSelector) boxSideSelector.style.display = 'block';
+      if (practiceEditorSection) practiceEditorSection.style.display = 'none';
+      if (panelBotOptions) panelBotOptions.style.display = 'flex';
+      if (panelOpponentInput) panelOpponentInput.style.display = 'block';
+      if (aiExplanationSection) aiExplanationSection.style.display = 'none';
+      if (gamePhaseContainer) gamePhaseContainer.style.display = 'none';
+
+      if (lblSide) lblSide.innerHTML = '<i class="fa-solid fa-robot" style="color:var(--cb-gold);"></i> CHỌN BÊN CHO BOT (BOT Ở PHÍA DƯỚI BÀN CỜ):';
       if (lblW) lblW.textContent = 'BOT CẦM TRẮNG';
       if (lblB) lblB.textContent = 'BOT CẦM ĐEN';
-      if (practiceEditorSection) practiceEditorSection.style.display = 'none';
       if (lblOpponentSuggestions) {
         lblOpponentSuggestions.innerHTML = 'Gợi ý nước đi khi đến lượt đối thủ';
       }
-      const coachSelect = document.getElementById('selectCoachPreset');
       if (coachSelect) coachSelect.style.display = 'none';
-      if (aiExplanationSection) aiExplanationSection.style.display = 'none';
-      if (gamePhaseContainer) gamePhaseContainer.style.display = 'none';
-    }
 
-    if (this.chessState.botColor) {
-      this.setBotColor(this.chessState.botColor); // Re-trigger to set correct orientation
+      if (this.chessState.botColor) {
+        this.setBotColor(this.chessState.botColor);
+      } else {
+        this.setInitialIdleState();
+      }
     }
   }
 
@@ -1732,7 +1753,6 @@ export class UIController {
       this.showToast('Lỗi khi tải file PGN!', 'warning');
     }
   }
-  }
 
   loadGameFromArchive(id) {
     if (!this.active) return;
@@ -2113,16 +2133,6 @@ export class UIController {
           e.preventDefault();
           const fromSq = e.dataTransfer.getData('text/plain');
           if (fromSq && fromSq !== square) {
-            if (this.appMode === 'PUZZLES') {
-              const uciMove = fromSq + square;
-              const moveRes = this.game.move({ from: fromSq, to: square, promotion: 'q' });
-              if (moveRes) {
-                this.renderBoard();
-                this.updateTimelinePgn();
-                this.puzzleManager.handleUserMove(uciMove);
-              }
-              return;
-            }
             this.handleBlackMoveInput({ from: fromSq, to: square });
           }
         });
@@ -2185,39 +2195,6 @@ export class UIController {
       this.selectedSquare = null;
       this.lastMove = null;
       this.renderBoard();
-      return;
-    }
-
-    if (this.appMode === 'PUZZLES') {
-      const piece = this.game.get(square);
-      if (this.selectedSquare) {
-        if (this.selectedSquare === square) {
-          this.selectedSquare = null;
-          this.renderBoard();
-          return;
-        }
-        const fromSq = this.selectedSquare;
-        const toSq = square;
-        const uciMove = fromSq + toSq;
-        const moveRes = this.game.move({ from: fromSq, to: toSq, promotion: 'q' });
-        if (moveRes) {
-          this.selectedSquare = null;
-          this.renderBoard();
-          this.updateTimelinePgn();
-          this.puzzleManager.handleUserMove(uciMove);
-          return;
-        }
-        if (piece && piece.color === this.game.turn()) {
-          this.selectedSquare = square;
-          this.renderBoard();
-          this.highlightLegalMoves(square);
-          return;
-        }
-      } else if (piece && piece.color === this.game.turn()) {
-        this.selectedSquare = square;
-        this.renderBoard();
-        this.highlightLegalMoves(square);
-      }
       return;
     }
 

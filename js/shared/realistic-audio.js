@@ -196,3 +196,8 @@ export class RealisticAudioFX {
     } catch (e) {}
   }
 }
+
+export default RealisticAudioFX;
+if (typeof window !== 'undefined') {
+  window.RealisticAudioFX = RealisticAudioFX;
+}

@@ -144,26 +144,34 @@
                 <select id="selectAppMode" class="cb-select cb-select--full" style="margin-bottom: 12px;">
                     <option value="ASSISTANT" selected>TRỢ LÝ (Bot ở dưới - Nhập cờ đối thủ)</option>
                     <option value="PLAY_VS_BOT">LUYỆN TẬP (Bạn ở dưới - Chơi với Bot)</option>
-                    <option value="PUZZLES">LUYỆN THẾ CỜ (Chiến Thuật / Puzzles)</option>
                 </select>
+                <!-- Nút Tự Xếp Bàn Cờ Kín Đáo Bên Chế Độ Luyện Tập -->
+                <div id="practiceEditorSection" style="margin-bottom: 10px; display: none;">
+                    <button type="button" id="btnToggleBoardEditor" class="btn-cb-action" style="width:100%; border-radius:var(--cb-radius); font-size:0.78rem; font-weight:800; padding:7px 10px; display:flex; align-items:center; justify-content:center; gap:7px; background:rgba(240, 178, 50, 0.1); border:1px solid rgba(240, 178, 50, 0.35); color:var(--cb-gold);">
+                        <i class="fa-solid fa-puzzle-piece"></i> <span>TỰ XẾP THẾ CỜ LUYỆN TẬP</span>
+                    </button>
+                </div>
 
-                <label id="lblSideChoice" class="cb-field-label">
-                    <i class="fa-solid fa-robot" style="color:var(--cb-gold);"></i> CHỌN BÊN CHO BOT:
-                </label>
-                <div class="side-selector-group">
-                    <button type="button" id="btnBotWhite" class="btn-side-choice">
-                        <i class="fa-solid fa-chess-king king-icon--w"></i>
-                        <span id="lblBtnBotWhite">BOT CẦM TRẮNG</span>
-                    </button>
-                    <button type="button" id="btnBotBlack" class="btn-side-choice">
-                        <i class="fa-solid fa-chess-king king-icon--b"></i>
-                        <span id="lblBtnBotBlack">BOT CẦM ĐEN</span>
-                    </button>
+                <!-- Side Selector for Assistant & Play vs Bot -->
+                <div id="boxSideSelector">
+                    <label id="lblSideChoice" class="cb-field-label">
+                        <i class="fa-solid fa-robot" style="color:var(--cb-gold);"></i> CHỌN BÊN CHO BOT:
+                    </label>
+                    <div class="side-selector-group">
+                        <button type="button" id="btnBotWhite" class="btn-side-choice">
+                            <i class="fa-solid fa-chess-king king-icon--w"></i>
+                            <span id="lblBtnBotWhite">BOT CẦM TRẮNG</span>
+                        </button>
+                        <button type="button" id="btnBotBlack" class="btn-side-choice">
+                            <i class="fa-solid fa-chess-king king-icon--b"></i>
+                            <span id="lblBtnBotBlack">BOT CẦM ĐEN</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Auto-Apply & Opponent Suggestion Checkboxes -->
-            <div class="cb-panel" style="display:flex; flex-direction:column; gap:8px;">
+            <div id="panelBotOptions" class="cb-panel" style="display:flex; flex-direction:column; gap:8px;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <input type="checkbox" id="chkAutoApplyMove" checked>
                     <label for="chkAutoApplyMove" id="lblAutoApplyMove" style="font-size:0.82rem; font-weight:700; color:#ffffff; cursor:pointer;">
@@ -188,7 +196,7 @@
             </div>
 
             <!-- Opponent Move Input (SAN/UCI) - NHANH NHẤT NÊN BÊN NGOÀI -->
-            <div class="cb-panel">
+            <div id="panelOpponentInput" class="cb-panel">
                 <label class="cb-field-label">
                     <i class="fa-solid fa-keyboard" style="color:var(--cb-accent);"></i> NHẬP NƯỚC CỜ (SAN/UCI):
                 </label>

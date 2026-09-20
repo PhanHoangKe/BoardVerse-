@@ -204,6 +204,7 @@
     }
 
     async initEngineSystem() {
+      if (!this.active) return;
       if (this.selectEngineMode && this.selectEngineMode.value) {
         this.adaptiveTimeManager.setPreset(this.selectEngineMode.value);
       }
